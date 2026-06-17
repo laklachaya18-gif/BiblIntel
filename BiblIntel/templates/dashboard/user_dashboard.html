@@ -1,0 +1,544 @@
+{% extends 'base.html' %} 
+{% block title %}Mon Dashboard - BiblIntel{% endblock%}
+{% block content %}
+<div class="container py-5">
+  <h1
+    class="fw-bold mb-5"
+    data-aos="fade-down"
+    style="
+      background: linear-gradient(135deg, #fff, #a5b4fc);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    "
+  >
+    <i class="bi bi-layout-text-sidebar-reverse me-2"></i>Mon tableau de bord
+  </h1>
+
+  <!-- Alerte blacklist -->
+  {% if est_blackliste %}
+  <div
+    class="glass-card mb-5"
+    style="border: 1px solid rgba(239, 68, 68, 0.4)"
+    data-aos="fade-up"
+  >
+    <div class="d-flex align-items-center gap-4">
+      <i
+        class="bi bi-exclamation-octagon-fill display-4"
+        style="color: var(--danger); flex-shrink: 0"
+      ></i>
+      <div>
+        <h4 style="color: #f87171; margin: 0 0 0.3rem">Compte blacklisté</h4>
+        <p style="color: #94a3b8; margin: 0">
+          {{ raison_blacklist|default:"Raison non spécifiée." }} Les nouveaux emprunts et réservations sont bloqués.
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Stats -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="0">
+      <div class="stat-glow">
+        <div class="stat-glow-number">{{ emprunts_total }}</div>
+        <div class="stat-glow-label">
+          <i class="bi bi-journal-arrow-down me-2"></i>Total emprunts
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="80">
+      <div class="stat-glow" style="border-top-color: var(--success)">
+        <div
+          class="stat-glow-number"
+          style="
+            background: linear-gradient(135deg, var(--success), #34d399);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          {{ emprunts_en_cours }}
+        </div>
+        <div class="stat-glow-label">
+          <i class="bi bi-check-circle me-2"></i>En cours
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="160">
+      <div class="stat-glow" style="border-top-color: var(--accent)">
+        <div
+          class="stat-glow-number"
+          style="
+            background: linear-gradient(135deg, var(--accent), #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          {{ reservations_actives }}
+        </div>
+        <div class="stat-glow-label">
+          <i class="bi bi-bookmark me-2"></i>Réservations
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="240">
+      <div class="stat-glow" style="border-top-color: var(--secondary)">
+        <div
+          class="stat-glow-number"
+          style="
+            background: linear-gradient(135deg, var(--secondary), #f9a8d4);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          {{ points }}
+        </div>
+        <div class="stat-glow-label">
+          <i class="bi bi-star-fill me-2"></i>Points fidélité
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Points & fidélité -->
+    <div class="col-lg-6" data-aos="fade-up">
+      <div class="glass-card h-100">
+        <h5
+          class="fw-bold mb-4"
+          style="
+            background: linear-gradient(135deg, #fff, #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          <i class="bi bi-gift me-2" style="color: #fbbf24"></i>Système de
+          points & fidélité
+        </h5>
+
+        <!-- Barre de progression -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between mb-2">
+            <span style="color: #94a3b8; font-size: 0.85rem"
+              >Progression vers 100 pts</span
+            >
+            <span style="color: #fbbf24; font-weight: 700"
+              >{{ points }} / 100 pts</span
+            >
+          </div>
+          <div
+            style="
+              background: rgba(255, 255, 255, 0.05);
+              border-radius: 12px;
+              height: 12px;
+              overflow: hidden;
+              border: 1px solid var(--glass-border);
+            "
+          >
+            <div
+              id="progress-fill"
+              style="
+                background: linear-gradient(
+                  90deg,
+                  var(--primary),
+                  var(--secondary)
+                );
+                height: 100%;
+                width: 0%;
+                border-radius: 12px;
+                transition: width 1s ease;
+              "
+            ></div>
+          </div>
+        </div>
+
+        <!-- Gains de points (détaillé avec explications) -->
+        <div class="mb-4">
+          <p
+            style="
+              color: #64748b;
+              font-size: 0.8rem;
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              margin-bottom: 0.75rem;
+            "
+          >
+            Comment gagner des points
+          </p>
+          <div class="d-flex flex-column gap-2">
+            <div
+              class="d-flex align-items-center gap-3 p-2"
+              style="background: var(--glass); border-radius: 10px"
+            >
+              <span
+                style="
+                  background: rgba(16, 185, 129, 0.2);
+                  color: #34d399;
+                  padding: 0.3rem 0.6rem;
+                  border-radius: 8px;
+                  font-weight: 700;
+                  font-size: 0.85rem;
+                "
+                >+30</span
+              >
+              <span style="color: #94a3b8; font-size: 0.85rem">
+                Retour <strong>AVANT</strong> la date prévue 
+                <span class="text-muted">(après 25 jours d'emprunt)</span>
+              </span>
+            </div>
+            <div
+              class="d-flex align-items-center gap-3 p-2"
+              style="background: var(--glass); border-radius: 10px"
+            >
+              <span
+                style="
+                  background: rgba(99, 102, 241, 0.2);
+                  color: #a5b4fc;
+                  padding: 0.3rem 0.6rem;
+                  border-radius: 8px;
+                  font-weight: 700;
+                  font-size: 0.85rem;
+                "
+                >+10</span
+              >
+              <span style="color: #94a3b8; font-size: 0.85rem">
+                Retour <strong>le jour prévu</strong>
+                <span class="text-muted">(après 25 jours d'emprunt)</span>
+              </span>
+            </div>
+            <div
+              class="d-flex align-items-center gap-3 p-2"
+              style="background: var(--glass); border-radius: 10px"
+            >
+              <span
+                style="
+                  background: rgba(236, 72, 153, 0.2);
+                  color: #f9a8d4;
+                  padding: 0.3rem 0.6rem;
+                  border-radius: 8px;
+                  font-weight: 700;
+                  font-size: 0.85rem;
+                "
+                >+20</span
+              >
+              <span style="color: #94a3b8; font-size: 0.85rem">
+                Bonus <strong>avis/notation</strong> sur le livre
+                <span class="text-muted">(cumulable avec +10 ou +30)</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ❌ Quand on ne gagne PAS de points -->
+        <div class="mb-4">
+          <p
+            style="
+              color: #64748b;
+              font-size: 0.8rem;
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              margin-bottom: 0.75rem;
+            "
+          >
+            ❌ Attention : aucune point dans ces cas
+          </p>
+          <div class="d-flex flex-column gap-2">
+            <div
+              class="d-flex align-items-center gap-3 p-2"
+              style="background: rgba(239, 68, 68, 0.1); border-radius: 10px"
+            >
+              <span
+                style="
+                  background: rgba(239, 68, 68, 0.3);
+                  color: #f87171;
+                  padding: 0.3rem 0.6rem;
+                  border-radius: 8px;
+                  font-weight: 700;
+                  font-size: 0.85rem;
+                "
+                >0</span
+              >
+              <span style="color: #f87171; font-size: 0.85rem">
+                ❌ Retour <strong>EN RETARD</strong> → aucun point (+ amende de 10 DH/jour)
+              </span>
+            </div>
+            <div
+              class="d-flex align-items-center gap-3 p-2"
+              style="background: rgba(239, 68, 68, 0.05); border-radius: 10px"
+            >
+              <span
+                style="
+                  background: rgba(100, 116, 139, 0.3);
+                  color: #94a3b8;
+                  padding: 0.3rem 0.6rem;
+                  border-radius: 8px;
+                  font-weight: 700;
+                  font-size: 0.85rem;
+                "
+                >0</span
+              >
+              <span style="color: #94a3b8; font-size: 0.85rem">
+                ❌ Retour <strong>avant 25 jours d'emprunt</strong> → aucun point
+              </span>
+            </div>
+            <div
+              class="d-flex align-items-center gap-3 p-2"
+              style="background: rgba(100, 116, 139, 0.05); border-radius: 10px"
+            >
+              <span
+                style="
+                  background: rgba(100, 116, 139, 0.2);
+                  color: #94a3b8;
+                  padding: 0.3rem 0.6rem;
+                  border-radius: 8px;
+                  font-weight: 700;
+                  font-size: 0.85rem;
+                "
+                >0</span
+              >
+              <span style="color: #94a3b8; font-size: 0.85rem">
+                👤 Bibliothécaires et administrateurs → exclus du système
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Récompenses -->
+        <p
+          style="
+            color: #64748b;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.75rem;
+          "
+        >
+          🎁 Récompenses débloquées
+        </p>
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="p-3 text-center"style="background:
+              {% if points >= 50 %}
+              rgba(99,102,241,0.2); border:1px solid rgba(99,102,241,0.4)
+              {% else %}
+              rgba(255,255,255,0.03); border:1px solid var(--glass-border)
+              {% endif %}; 
+              border-radius:12px;"
+            >
+              <div style="font-size: 1.5rem">
+                {% if points >= 50 %}🎁{% else %}🔒{% endif %}
+              </div>
+              <div
+                style="
+                  color: #a5b4fc;
+                  font-weight: 700;
+                  font-size: 0.9rem;
+                  margin-top: 0.3rem;
+                "
+              >
+                50 pts
+              </div>
+              <div style="color: #64748b; font-size: 0.75rem">
+                Choisir la date de retour
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="p-3 text-center"style="background:{% if points >= 100 %}rgba(245,158,11,0.2); border:1px solid rgba(245,158,11,0.4){% else %}rgba(255,255,255,0.03); border:1px solid var(--glass-border){% endif %}; border-radius:12px;"
+            >
+              <div style="font-size: 1.5rem">
+                {% if points >= 100 %}💰{% else %}🔒{% endif %}
+              </div>
+              <div
+                style="
+                  color: #fbbf24;
+                  font-weight: 700;
+                  font-size: 0.9rem;
+                  margin-top: 0.3rem;
+                "
+              >
+                100 pts
+              </div>
+              <div style="color: #64748b; font-size: 0.75rem">
+                Amende réduite de 50%
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Astuce supplémentaire -->
+        <div class="mt-3 pt-2">
+          <div class="alert alert-info p-2 mb-0" style="background: rgba(99, 102, 241, 0.1); border: none; border-radius: 10px; font-size: 0.75rem;">
+            <i class="bi bi-lightbulb me-1"></i>
+            <strong>💡 Astuce :</strong> Pour maximiser vos points, gardez le livre <strong>au moins 25 jours</strong>, 
+            rendez-le <strong>avant la date prévue</strong> et laissez un <strong>avis</strong> ! 
+            <span class="text-warning">Maximum possible : +50 points par emprunt !</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Amendes -->
+    <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
+      <div class="glass-card h-100" {% if total_amendes > 0 %}style="border-color:rgba(239,68,68,0.2);"{% endif %}>
+        <h5
+          class="fw-bold mb-4"
+          style="
+            background: linear-gradient(135deg, #fff, #f87171);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          <i class="bi bi-cash-coin me-2" style="color: #f87171"></i>Amendes &
+          Pénalités
+        </h5>
+        {% if total_amendes > 0 %}
+        <div
+          class="text-center mb-4 p-4"
+          style="
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 16px;
+          "
+        >
+          <div style="font-size: 2.5rem; font-weight: 800; color: #f87171">
+            {{ total_amendes }} DH
+          </div>
+          <div style="color: #94a3b8; font-size: 0.9rem">
+            Total amendes impayées
+          </div>
+          {% if total_amendes > 100 %}
+          <div style="color: #f87171; font-size: 0.82rem; margin-top: 0.5rem">
+            <i class="bi bi-exclamation-triangle me-1"></i>Dépassement du seuil de 100 DH — Emprunts bloqués
+          </div>
+          {% endif %}
+        </div>
+        <p style="color: #64748b; font-size: 0.85rem; text-align: center">
+          Rendez-vous dans
+          <strong style="color: #a5b4fc">Mes Emprunts</strong> pour payer vos amendes.
+        </p>
+        {% if points >= 100 %}
+        <div
+          class="mt-3 p-3"
+          style="
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 12px;
+          "
+        >
+          <p style="color: #fbbf24; margin: 0; font-size: 0.85rem">
+            <i class="bi bi-star-fill me-2"></i>Vous avez {{ points }} points — Réduction 50% disponible lors du paiement !
+          </p>
+        </div>
+        {% endif %} {% else %}
+        <div class="text-center py-4">
+          <i
+            class="bi bi-check-circle-fill display-4"
+            style="color: #34d399; opacity: 0.6"
+          ></i>
+          <p class="mt-3" style="color: #34d399; font-weight: 600">
+            Aucune amende impayée ✓
+          </p>
+          <p style="color: #475569; font-size: 0.85rem">
+            Continuez à retourner vos livres à temps pour gagner des points !
+          </p>
+        </div>
+        {% endif %}
+
+        <div
+          class="mt-4 pt-3"
+          style="border-top: 1px solid var(--glass-border)"
+        >
+          <p
+            style="
+              color: #64748b;
+              font-size: 0.78rem;
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              margin-bottom: 0.5rem;
+            "
+          >
+            Règles des amendes
+          </p>
+          <div style="color: #475569; font-size: 0.82rem; line-height: 2">
+            <div>
+              <i class="bi bi-dot" style="color: #f87171"></i>10 DH par jour de
+              retard
+            </div>
+            <div>
+              <i class="bi bi-dot" style="color: #f87171"></i>Blocage si amende
+              > 100 DH
+            </div>
+            <div>
+              <i class="bi bi-dot" style="color: #f87171"></i>Blacklist si
+              impayée > 30 jours
+            </div>
+          </div>
+          <div class="mt-2 text-center">
+            <small class="text-muted" style="font-size: 0.7rem;">
+              ⚠️ Rappel : Un retour en retard = 0 point de fidélité !
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions rapides -->
+  <div class="row g-3 mt-2" data-aos="fade-up">
+    <div class="col-auto">
+      <a href="{% url 'borrowings:emprunt_list' %}" class="btn btn-glow">
+        <i class="bi bi-journal-arrow-down me-2"></i>Mes emprunts
+      </a>
+    </div>
+    <div class="col-auto">
+      <a
+        href="{% url 'borrowings:mes_reservations' %}"
+        class="btn btn-glow"
+        style="background: linear-gradient(135deg, var(--secondary), #f9a8d4)"
+      >
+        <i class="bi bi-bookmark me-2"></i>Mes réservations
+      </a>
+    </div>
+    <div class="col-auto">
+      <a
+        href="{% url 'books:livre_list' %}"
+        class="btn btn-glow"
+        style="background: linear-gradient(135deg, var(--success), #34d399)"
+      >
+        <i class="bi bi-book me-2"></i>Catalogue
+      </a>
+    </div>
+    <div class="col-auto">
+      <a
+        href="{% url 'notifications:notification_list' %}"
+        class="btn btn-glow"
+        style="background: linear-gradient(135deg, #64748b, #94a3b8)"
+      >
+        <i class="bi bi-bell me-2"></i>Notifications
+      </a>
+    </div>
+  </div>
+</div>
+
+<div id="points-data" data-points="{{ points }}" style="display: none"></div>
+{% endblock %} {% block extra_js %}
+<script>
+  (function () {
+    var el = document.getElementById("points-data");
+    if (el) {
+      var pts = parseInt(el.getAttribute("data-points"), 10) || 0;
+      var fill = document.getElementById("progress-fill");
+      if (fill)
+        setTimeout(() => {
+          fill.style.width = Math.min(pts, 100) + "%";
+        }, 400);
+    }
+  })();
+</script>
+{% endblock %}

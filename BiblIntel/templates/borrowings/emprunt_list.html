@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+{% block title %}Mes Emprunts - BiblIntel{% endblock %}
+
+{% block extra_css %}
+<style>
+  .emprunt-card-retard {
+    border-color: rgba(239, 68, 68, 0.4) !important;
+  }
+  .emprunt-card-retourne {
+    border-color: rgba(100, 116, 139, 0.2) !important;
+    opacity: 0.75;
+  }
+  
+  .table-emprunts {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table-emprunts th {
+    color: #94a3b8;
+    font-weight: 500;
+    font-size: 0.85rem;
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: left;
+  }
+  
+  .table-emprunts td {
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+  }
+  
+  .user-avatar-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  
+  .user-avatar-initial {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #ec4899);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .status-dispo {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+  .status-empr {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+  .status-arch {
+    background: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+  }
+  .status-res {
+    background: rgba(100, 116, 139, 0.2);
+    color: #94a3b8;
+    border: 1px solid rgba(100, 116, 139, 0.3);
+  }
+  
+  /* Tooltip personnalisé pour les points */
+  .points-tooltip {
+    cursor: help;
+    border-bottom: 1px dashed #64748b;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-5" data-aos="fade-down">
+    <div>
+      <h2 class="fw-bold mb-1" style="background: linear-gradient(135deg, #fff, #a5b4fc); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        <i class="bi bi-journal-arrow-down me-2"></i>
+        {% if est_admin or est_bibliothecaire %}
+          {% if statut_actuel == 'en_cours' %}
+            Emprunts en cours
+          {% elif statut_actuel == 'retard' %}
+            Emprunts en retard
+          {% else %}
+            Tous les emprunts
+          {% endif %}
+        {% else %}
+          Mes Emprunts
+        {% endif %}
+      </h2>
+      <p style="color: #64748b; margin: 0">
+        {% if est_admin or est_bibliothecaire %}
+          Liste des emprunts de tous les utilisateurs
+        {% else %}
+          Historique complet de vos emprunts en cours et passés
+        {% endif %}
+      </p>
+    </div>
+    {% if request.user.status != "bibliothecaire" and not request.user.is_staff %}
+    <a href="{% url 'books:livre_list' %}" class="btn btn-glow">
+      <i class="bi bi-plus-lg me-2"></i>Emprunter un livre
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Explication rapide des points à côté des actions -->
+  {% if not est_admin and not est_bibliothecaire %}
+  <div class="alert alert-info mb-4 py-2" style="background: rgba(99, 102, 241, 0.1); border: none; border-radius: 12px; font-size: 0.75rem;">
+    <i class="bi bi-star-fill me-1" style="color: #fbbf24;"></i>
+    <strong>Système de points :</strong> 
+    Retour <strong>AVANT</strong> la date prévue (après 25j) → <span class="text-success">+30 pts</span> | 
+    Retour <strong>le jour prévu</strong> (après 25j) → <span class="text-success">+10 pts</span> | 
+    + <span class="text-warning">20 pts bonus</span> si avis laissé | 
+    <span class="text-danger">❌ Retour en retard = 0 point</span>
+  </div>
+  {% endif %}
+
+  {% if emprunts %}
+  
+    {% if est_admin or est_bibliothecaire %}
+    <!-- VUE ADMIN/BIBLIOTHÉCAIRE : Tableau compact -->
+    <div class="glass-card" data-aos="fade-up">
+      <div class="table-responsive">
+        <table class="table-emprunts">
+          <thead>
+            <tr>
+              <th>Utilisateur</th>
+              <th>Livre</th>
+              <th>Statut</th>
+              <th>Date emprunt</th>
+              <th>Retour prévu</th>
+              <th>Amende</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for emprunt in emprunts %}
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  {% if emprunt.utilisateur.photo_profil %}
+                    <img src="{{ emprunt.utilisateur.photo_profil.url }}" alt="avatar" class="user-avatar-img">
+                  {% else %}
+                    <div class="user-avatar-initial">
+                      {{ emprunt.utilisateur.first_name|first }}{{ emprunt.utilisateur.last_name|first }}
+                    </div>
+                  {% endif %}
+                  <span>{{ emprunt.utilisateur.first_name }} {{ emprunt.utilisateur.last_name }}</span>
+                </div>
+              </td>
+              <td>{{ emprunt.livre.titre|truncatechars:40 }}</td>
+              <td>
+                <span class="status-badge 
+                  {% if emprunt.statut == 'en_cours' %}status-dispo
+                  {% elif emprunt.statut == 'retard' %}status-empr
+                  {% elif emprunt.statut == 'retourne' %}status-arch
+                  {% else %}status-res{% endif %}">
+                  {{ emprunt.get_statut_display }}
+                </span>
+              </td>
+              <td style="color: #94a3b8">{{ emprunt.date_demande|date:"d/m/Y" }}</td>
+              <td>
+                {{ emprunt.date_retour_prevue|date:"d/m/Y"|default:"—" }}
+                {% if emprunt.calculer_retard > 0 %}
+                  <br><small class="text-danger">({{ emprunt.calculer_retard }}j retard)</small>
+                {% endif %}
+              </td>
+              <td>
+                {% if emprunt.amende_totale > 0 %}
+                  <span style="color: #fbbf24;">{{ emprunt.amende_totale }} DH</span>
+                  {% if not emprunt.est_payee %}
+                    <span class="text-danger">(impayée)</span>
+                  {% else %}
+                    <span class="text-success">(payée)</span>
+                  {% endif %}
+                {% else %}
+                  <span style="color: #64748b">—</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="d-flex gap-2">
+                  <a href="{% url 'books:livre_detail' emprunt.livre.id %}" class="btn btn-sm btn-glow py-1 px-2" title="Voir le livre">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  {% if emprunt.amende_totale > 0 and not emprunt.est_payee %}
+                    <a href="{% url 'borrowings:payer_amende_manuel' emprunt.pk %}" class="btn btn-sm btn-success-glow py-1 px-2" title="Paiement manuel">
+                      <i class="bi bi-cash-stack"></i>
+                    </a>
+                    <a href="{% url 'borrowings:payer_amende_en_ligne' emprunt.pk %}" class="btn btn-sm btn-glow py-1 px-2" title="Paiement en ligne">
+                      <i class="bi bi-credit-card"></i>
+                    </a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    {% else %}
+    <!-- VUE UTILISATEUR NORMAL : Cartes détaillées -->
+    <div class="row g-4" data-aos="fade-up">
+      {% for emprunt in emprunts %}
+      <div class="col-12">
+        <div class="glass-card p-4 {% if emprunt.statut == 'retard' %}emprunt-card-retard{% elif emprunt.statut == 'retourne' %}emprunt-card-retourne{% endif %}">
+          <div class="row align-items-center g-3">
+            <div class="col-auto">
+              <div style="width: 60px; height: 80px; border-radius: 10px; overflow: hidden;">
+                {% if emprunt.livre.couverture %}
+                <img src="{{ emprunt.livre.couverture.url }}" style="width: 100%; height: 100%; object-fit: cover" alt="">
+                {% else %}
+                <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #6366f1, #ec4899);">
+                  <i class="bi bi-book text-white"></i>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="col">
+              <h5 class="fw-bold mb-1" style="color: #e2e8f0">{{ emprunt.livre.titre }}</h5>
+              <p style="color: #94a3b8; margin: 0; font-size: 0.9rem">
+                <i class="bi bi-person me-1"></i>{{ emprunt.livre.auteur }}
+              </p>
+              {% if emprunt.a_prolonge %}
+              <span class="badge bg-warning text-dark mt-1">Prolongé +7j</span>
+              {% endif %}
+            </div>
+
+            <div class="col-md-2 text-center">
+              <div class="small text-uppercase text-secondary">Début</div>
+              <div>{{ emprunt.date_debut|date:"d/m/Y"|default:"—" }}</div>
+              <div class="small text-muted mt-1">
+                <span class="points-tooltip" title="Vous devez garder le livre au moins 25 jours pour gagner des points">📅 +25j requis</span>
+              </div>
+            </div>
+
+            <div class="col-md-2 text-center">
+              <div class="small text-uppercase text-secondary">Retour prévu</div>
+              {% if emprunt.date_retour_prevue %}
+                {% if emprunt.calculer_retard > 0 %}
+                  <div class="text-danger fw-bold">
+                    {{ emprunt.date_retour_prevue|date:"d/m/Y" }}
+                    <br><small>({{ emprunt.calculer_retard }}j retard)</small>
+                  </div>
+                  <!-- Avertissement pour le retard -->
+                  <div class="small text-danger mt-1">
+                    <i class="bi bi-exclamation-triangle"></i> Retard = 0 point
+                  </div>
+                {% else %}
+                  <div class="text-success">{{ emprunt.date_retour_prevue|date:"d/m/Y" }}</div>
+                  <div class="small text-muted mt-1">
+                    <span class="points-tooltip" title="Retour dans les délais (après 25j) = +10 points, retour avant délai = +30 points">✅ Points possibles</span>
+                  </div>
+                {% endif %}
+              {% else %}
+                <div class="text-secondary">—</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-2 text-center">
+              <span class="status-badge 
+                {% if emprunt.statut == 'en_cours' %}status-dispo
+                {% elif emprunt.statut == 'retard' %}status-empr
+                {% elif emprunt.statut == 'retourne' %}status-arch
+                {% else %}status-res{% endif %}">
+                {{ emprunt.get_statut_display }}
+              </span>
+              {% if emprunt.amende_totale > 0 %}
+              <div class="mt-2 text-danger fw-bold">
+                <i class="bi bi-exclamation-triangle"></i> {{ emprunt.amende_totale }} DH
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-auto">
+              <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'books:livre_detail' emprunt.livre.id %}" class="btn btn-glow btn-sm" title="Voir le livre">
+                  <i class="bi bi-eye"></i>
+                </a>
+
+                {% if emprunt.statut == 'en_cours' or emprunt.statut == 'retard' or emprunt.statut == 'approuve' %}
+                <a href="{% url 'books:livre_read' emprunt.livre.id %}" class="btn btn-glow btn-sm">
+                  <i class="bi bi-book"></i> Lire
+                </a>
+                {% endif %}
+
+                {% if emprunt.statut == 'en_cours' or emprunt.statut == 'retard' or emprunt.statut == 'approuve' %}
+                <a href="{% url 'borrowings:emprunt_retour' emprunt.pk %}" class="btn btn-success-glow btn-sm" onclick="return confirm('Confirmer le retour ?');">
+                  <i class="bi bi-arrow-return-left"></i> Retourner
+                </a>
+                {% endif %}
+
+                {% if emprunt.statut == 'en_cours' and not emprunt.a_prolonge and emprunt.calculer_retard == 0 and user.status == "enseignant" %}
+                <a href="{% url 'borrowings:emprunt_prolonger' emprunt.pk %}" class="btn btn-glow btn-sm" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+                  <i class="bi bi-clock-history"></i> +7j (Enseignant)
+                </a>
+                {% endif %}
+
+                {% if emprunt.amende_totale > 0 and not emprunt.est_payee %}
+                <div class="d-flex gap-1">
+                  <a href="{% url 'borrowings:payer_amende_manuel' emprunt.pk %}" class="btn btn-success-glow btn-sm" title="Paiement manuel">
+                    <i class="bi bi-cash-stack"></i>
+                  </a>
+                  <a href="{% url 'borrowings:payer_amende_en_ligne' emprunt.pk %}" class="btn btn-glow btn-sm" title="Paiement en ligne">
+                    <i class="bi bi-credit-card"></i>
+                  </a>
+                </div>
+                {% endif %}
+
+                {% if emprunt.est_payee and emprunt.amende_totale > 0 %}
+                <span class="text-success align-self-center">
+                  <i class="bi bi-check-circle"></i> Payée
+                </span>
+                {% endif %}
+              </div>
+              
+              <!-- Message spécifique si l'emprunt est en retard -->
+              {% if emprunt.statut == 'retard' %}
+              <div class="alert alert-warning mt-2 mb-0 py-2" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; font-size: 0.7rem;">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                <strong>⚠️ Attention :</strong> Ce retour étant <strong>en retard</strong>, vous ne gagnerez <strong>aucun point de fidélité</strong>.
+                Rendez le livre rapidement pour limiter l'amende (10 DH/jour).
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  {% else %}
+  <div class="glass-card text-center py-5" data-aos="zoom-in">
+    <i class="bi bi-inbox display-1" style="color: #6366f1; opacity: 0.3"></i>
+    <h4 class="mt-4" style="color: #94a3b8">Aucun emprunt pour le moment</h4>
+    <p style="color: #475569">Découvrez notre catalogue et empruntez votre premier livre !</p>
+    <a href="{% url 'books:livre_list' %}" class="btn btn-glow mt-2">
+      <i class="bi bi-book me-2"></i>Voir les livres
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Script pour les tooltips -->
+<script>
+  // Activer les tooltips Bootstrap
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+  })
+</script>
+{% endblock %}

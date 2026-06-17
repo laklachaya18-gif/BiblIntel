@@ -1,0 +1,1121 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      {% block title %}BiblIntel{% endblock %}</title>
+
+    <!-- Bootstrap 5 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Bootstrap Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+    />
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <!-- AOS Animation -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+
+    <style>
+      :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --secondary: #ec4899;
+        --accent: #f59e0b;
+        --success: #10b981;
+        --danger: #ef4444;
+        --dark: #0f172a;
+        --dark-light: #1e293b;
+        --glass: rgba(255, 255, 255, 0.08);
+        --glass-border: rgba(255, 255, 255, 0.1);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Outfit", sans-serif;
+        background: var(--dark);
+        color: #e2e8f0;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* Animated Background */
+      .bg-animation {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        background:
+          radial-gradient(
+            ellipse at 20% 20%,
+            rgba(99, 102, 241, 0.15) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            ellipse at 80% 80%,
+            rgba(236, 72, 153, 0.15) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            ellipse at 50% 50%,
+            rgba(245, 158, 11, 0.08) 0%,
+            transparent 50%
+          );
+      }
+
+      .bg-animation::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        animation: bgMove 20s linear infinite;
+      }
+
+      @keyframes bgMove {
+        0% {
+          transform: translate(0, 0);
+        }
+
+        100% {
+          transform: translate(60px, 60px);
+        }
+      }
+
+      /* Glassmorphism Navbar */
+      .navbar-premium {
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--glass-border);
+        padding: 1rem 2rem;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+      }
+
+      .navbar-brand-premium {
+        font-size: 1.8rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .navbar-brand-premium i {
+        font-size: 2rem;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .nav-link-premium {
+        color: rgba(255, 255, 255, 0.7) !important;
+        font-weight: 500;
+        padding: 0.6rem 1.2rem !important;
+        border-radius: 12px;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .nav-link-premium::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        opacity: 0;
+        transition: opacity 0.3s;
+        border-radius: 12px;
+        z-index: -1;
+      }
+
+      .nav-link-premium:hover::before,
+      .nav-link-premium.active::before {
+        opacity: 1;
+      }
+
+      .nav-link-premium:hover,
+      .nav-link-premium.active {
+        color: white !important;
+      }
+
+      /* User Dropdown */
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+      }
+
+      /* Glass Cards */
+      .glass-card {
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 2rem;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .glass-card:hover {
+        transform: translateY(-8px);
+        border-color: rgba(99, 102, 241, 0.3);
+        box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.25);
+      }
+
+      /* Gradient Buttons */
+      .btn-glow {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border: none;
+        padding: 0.875rem 2rem;
+        border-radius: 16px;
+        font-weight: 600;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+      }
+
+      .btn-glow:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 40px rgba(99, 102, 241, 0.5);
+        color: white;
+      }
+
+      .btn-glow::after {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+          45deg,
+          transparent,
+          rgba(255, 255, 255, 0.1),
+          transparent
+        );
+        transform: rotate(45deg);
+        transition: all 0.5s;
+      }
+
+      .btn-glow:hover::after {
+        left: 100%;
+      }
+
+      .btn-success-glow {
+        background: linear-gradient(135deg, var(--success), #34d399);
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+      }
+
+      .btn-success-glow:hover {
+        box-shadow: 0 0 40px rgba(16, 185, 129, 0.5);
+      }
+
+      .btn-danger-glow {
+        background: linear-gradient(135deg, var(--danger), #f87171);
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+      }
+
+      .btn-danger-glow:hover {
+        box-shadow: 0 0 40px rgba(239, 68, 68, 0.5);
+      }
+
+      /* Stats with glow */
+      .stat-glow {
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 2.5rem 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s;
+      }
+
+      .stat-glow::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+      }
+
+      .stat-glow:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+      }
+
+      .stat-glow-number {
+        font-size: 3.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1;
+      }
+
+      .stat-glow-label {
+        color: #94a3b8;
+        font-size: 1rem;
+        margin-top: 1rem;
+        font-weight: 500;
+      }
+
+      /* Book Cards Premium */
+      .book-premium {
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        height: 100%;
+      }
+
+      .book-premium:hover {
+        transform: translateY(-12px) scale(1.02);
+        box-shadow: 0 30px 60px rgba(99, 102, 241, 0.3);
+        border-color: rgba(99, 102, 241, 0.3);
+      }
+
+      .book-cover-premium {
+        height: 240px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .book-cover-premium img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s;
+      }
+
+      .book-premium:hover .book-cover-premium img {
+        transform: scale(1.1);
+      }
+
+      .book-cover-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to top, rgba(15, 23, 42, 0.9), transparent);
+        display: flex;
+        align-items: flex-end;
+        padding: 1.5rem;
+      }
+
+      .book-status-premium {
+        padding: 0.5rem 1.25rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+      }
+
+      .status-dispo {
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
+
+      .status-empr {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+
+      .status-res {
+        background: rgba(99, 102, 241, 0.2);
+        color: #a5b4fc;
+        border: 1px solid rgba(99, 102, 241, 0.3);
+      }
+
+      .status-arch {
+        background: rgba(148, 163, 184, 0.2);
+        color: #cbd5e1;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+      }
+
+      /* Forms Premium */
+      .form-premium {
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 3rem;
+      }
+
+      .form-control-premium {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 1rem 1.25rem;
+        color: white;
+        font-size: 1rem;
+        transition: all 0.3s;
+      }
+
+      .form-control-premium:focus {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--primary);
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+        color: white;
+      }
+
+      .form-control-premium::placeholder {
+        color: #64748b;
+      }
+
+      .form-label-premium {
+        color: #94a3b8;
+        font-weight: 500;
+        margin-bottom: 0.75rem;
+      }
+
+      /* ============================================
+           SELECT CUSTOM DARK - REMPLACE LE NATIVE
+           ============================================ */
+      .select-dark-wrapper {
+        position: relative;
+      }
+
+      .select-dark-wrapper select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        cursor: pointer;
+      }
+
+      .select-dark-wrapper::after {
+        content: "";
+        position: absolute;
+        right: 1.25rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 6px solid #64748b;
+        pointer-events: none;
+        transition: transform 0.3s;
+      }
+
+      .select-dark-wrapper select:focus + ::after,
+      .select-dark-wrapper select:active + ::after {
+        transform: translateY(-50%) rotate(180deg);
+      }
+
+      /* Force le fond sombre sur toutes les options - hack cross-browser */
+      select.form-control-premium {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: white !important;
+      }
+
+      select.form-control-premium option {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+        padding: 12px !important;
+        font-size: 1rem;
+      }
+
+      select.form-control-premium option:checked,
+      select.form-control-premium option:hover,
+      select.form-control-premium option:focus {
+        background: linear-gradient(135deg, #6366f1, #ec4899) !important;
+        color: white !important;
+        box-shadow: inset 0 0 10px rgba(99, 102, 241, 0.3);
+      }
+
+      /* Firefox specific */
+      @-moz-document url-prefix() {
+        select.form-control-premium {
+          background-color: #1e293b !important;
+        }
+
+        select.form-control-premium option {
+          background-color: #1e293b !important;
+        }
+      }
+
+      /* ============================================
+           FILE INPUT CUSTOM DARK
+           ============================================ */
+      input[type="file"].form-control-premium {
+        padding: 0.6rem 1.25rem;
+        color: #94a3b8;
+      }
+
+      input[type="file"].form-control-premium::file-selector-button {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 12px;
+        margin-right: 1rem;
+        cursor: pointer;
+        font-weight: 600;
+        font-family: "Outfit", sans-serif;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+      }
+
+      input[type="file"].form-control-premium::file-selector-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
+      }
+
+      /* Webkit browsers (Chrome, Edge, Safari) */
+      input[type="file"].form-control-premium::-webkit-file-upload-button {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 12px;
+        margin-right: 1rem;
+        cursor: pointer;
+        font-weight: 600;
+        font-family: "Outfit", sans-serif;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+      }
+
+      input[type="file"].form-control-premium::-webkit-file-upload-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
+      }
+
+      /* ============================================
+           INVALID / ERROR STYLING
+           ============================================ */
+      .form-control-premium.is-invalid {
+        border-color: var(--danger) !important;
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.2) !important;
+        animation: shake 0.5s ease-in-out;
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+
+        25% {
+          transform: translateX(-5px);
+        }
+
+        75% {
+          transform: translateX(5px);
+        }
+      }
+
+      /* Number input arrows */
+      input[type="number"].form-control-premium::-webkit-inner-spin-button,
+      input[type="number"].form-control-premium::-webkit-outer-spin-button {
+        opacity: 1;
+        filter: invert(1) brightness(1.5);
+      }
+
+      /* Tables Premium */
+      .table-premium {
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        overflow: hidden;
+      }
+
+      .table-premium thead th {
+        background: linear-gradient(
+          135deg,
+          rgba(99, 102, 241, 0.2),
+          rgba(236, 72, 153, 0.2)
+        );
+        color: white;
+        font-weight: 600;
+        padding: 1.25rem;
+        border: none;
+      }
+
+      .table-premium tbody td {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--glass-border);
+        color: #cbd5e1;
+        vertical-align: middle;
+      }
+
+      .table-premium tbody tr:hover {
+        background: rgba(99, 102, 241, 0.05);
+      }
+
+      .avatar-admin {
+        background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      }
+
+      /* Alerts */
+      .alert-premium {
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        color: white;
+      }
+
+      /* Footer Premium */
+      .footer-premium {
+        background: linear-gradient(180deg, transparent, rgba(15, 23, 42, 0.8));
+        border-top: 1px solid var(--glass-border);
+        padding: 3rem 0;
+        margin-top: 4rem;
+      }
+
+      /* Animations */
+      .float-animation {
+        animation: float 6s ease-in-out infinite;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+
+        50% {
+          transform: translateY(-20px);
+        }
+      }
+
+      .pulse-glow {
+        animation: pulseGlow 2s ease-in-out infinite;
+      }
+
+      @keyframes pulseGlow {
+        0%,
+        100% {
+          box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+
+        50% {
+          box-shadow: 0 0 40px rgba(99, 102, 241, 0.6);
+        }
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: var(--dark);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, var(--primary), var(--secondary));
+        border-radius: 4px;
+      }
+
+      /* Loading shimmer */
+      .shimmer {
+        background: linear-gradient(
+          90deg,
+          var(--glass) 25%,
+          rgba(255, 255, 255, 0.05) 50%,
+          var(--glass) 75%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+      }
+
+      @keyframes shimmer {
+        0% {
+          background-position: 200% 0;
+        }
+
+        100% {
+          background-position: -200% 0;
+        }
+      }
+
+      /* ============================================
+   FORCE DARK SUR TOUTES LES TABLES BOOTSTRAP
+   ============================================ */
+      .table {
+        --bs-table-bg: transparent !important;
+        --bs-table-striped-bg: transparent !important;
+        --bs-table-hover-bg: rgba(99, 102, 241, 0.05) !important;
+        --bs-table-border-color: rgba(255, 255, 255, 0.05) !important;
+        color: #cbd5e1 !important;
+      }
+
+      .table > :not(caption) > * > * {
+        background-color: transparent !important;
+        border-bottom-color: rgba(255, 255, 255, 0.05) !important;
+        color: inherit;
+      }
+
+      .table thead th {
+        background-color: transparent !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+      }
+
+      .table tbody tr:hover > * {
+        background-color: rgba(99, 102, 241, 0.05) !important;
+        color: inherit;
+      }
+
+      .table-responsive {
+        background: transparent !important;
+      }
+
+      /* Fix Bootstrap input/select blanc */
+      .form-control,
+      .form-select {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        color: #e2e8f0 !important;
+      }
+
+      .form-control:focus,
+      .form-select:focus {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        border-color: var(--primary) !important;
+        color: white !important;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.2) !important;
+      }
+
+      .form-control::placeholder {
+        color: #64748b !important;
+      }
+    </style>
+    {% block extra_css %}{% endblock %}
+    <base target="_self" />
+  </head>
+
+  <body>
+    <div class="bg-animation"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-premium">
+      <div class="container">
+        <a class="navbar-brand-premium" href="{% url 'users:home' %}">
+          <i class="bi bi-book-half"></i>
+          <span>BiblIntel</span>
+        </a>
+        <button
+          class="navbar-toggler border-0"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          style="color: white"
+        >
+          <i class="bi bi-list fs-2"></i>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto align-items-center gap-2">
+            {% if user.is_authenticated %}
+            <li class="nav-item">
+              <a
+                class="nav-link nav-link-premium {% if request.path == '/' %}active{% endif %}"
+                href="{% url 'users:home' %}"
+              >
+                <i class="bi bi-house-door me-1"></i>Accueil
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link nav-link-premium"
+                href="{% url 'books:livre_list' %}"
+              >
+                <i class="bi bi-book me-1"></i>Livres
+              </a>
+            </li>
+            
+            {# ✅ BIBLIOTHÉCAIRE (anciennement fonctionnaire) #}
+            {% if user.status == "bibliothecaire" %}
+            <li class="nav-item">
+              <a
+                class="nav-link nav-link-premium"
+                href="{% url 'borrowings:emprunt_list' %}"
+              >
+                <i class="bi bi-journal-arrow-down me-1"></i>Emprunts
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link nav-link-premium"
+                href="{% url 'books:livre_create' %}"
+              >
+                <i class="bi bi-plus-circle me-1"></i>Ajouter un livre
+              </a>
+            </li>
+            
+            {# ✅ AJOUT : LIEN PAIEMENTS EN ATTENTE POUR BIBLIOTHÉCAIRE #}
+            <li class="nav-item">
+              <a class="nav-link nav-link-premium" href="{% url 'dashboard:paiements_manuels_attente' %}">
+                <i class="bi bi-cash-stack me-1"></i>Paiements en attente
+              </a>
+            </li>
+            
+            {# ✅ EMPLOYEUR (même comportement qu'un utilisateur normal) #}
+            {% elif user.status == "employeur" or not user.is_staff %}
+            <li class="nav-item">
+              <a
+                class="nav-link nav-link-premium"
+                href="{% url 'borrowings:emprunt_list' %}"
+              >
+                <i class="bi bi-journal-arrow-down me-1"></i>Emprunts
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link nav-link-premium"
+                href="{% url 'borrowings:mes_reservations' %}"
+              >
+                <i class="bi bi-bookmark me-1"></i>Réservations
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link nav-link-premium position-relative"
+                href="{% url 'notifications:notification_list' %}"
+              >
+                <i class="bi bi-bell me-1"></i>Notifications
+              </a>
+            </li>
+            
+            {# ✅ AJOUT : LIEN AMENDES POUR TOUS LES UTILISATEURS NORMAUX #}
+            <li class="nav-item">
+              <a class="nav-link nav-link-premium position-relative" href="{% url 'borrowings:mes_amendes' %}">
+                <i class="bi bi-cash-coin me-1"></i>Amendes
+                {% if total_amendes_non_payees > 0 %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+                  {{ total_amendes_non_payees|floatformat:0 }} DH
+                </span>
+                {% endif %}
+              </a>
+            </li>
+            
+            {# ✅ ADMIN #}
+            {% else %}
+            <li class="nav-item">
+              <a
+                class="nav-link nav-link-premium"
+                href="{% url 'users:user_list' %}"
+              >
+                <i class="bi bi-people me-1"></i>Utilisateurs
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link nav-link-premium"
+                href="{% url 'notifications:notification_list' %}"
+              >
+                <i class="bi bi-bell me-1"></i>Suivi
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a
+                class="nav-link nav-link-premium"
+                href="{% url 'logs:log_list' %}"
+              >
+                <i class="bi bi-journal-text me-1"></i>Logs
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link nav-link-premium"
+                href="{% url 'dashboard:admin_dashboard' %}"
+              >
+                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+              </a>
+            </li>
+            {% endif %}
+            {% if user.status == "bibliothecaire" %}
+<li class="nav-item">
+    <a class="nav-link nav-link-premium" href="{% url 'dashboard:bibliothecaire_dashboard' %}">
+        <i class="bi bi-cash-coin me-1"></i>Mon Salaire
+    </a>
+</li>
+{% endif %}
+{% if user.status == "bibliothecaire" %}
+<li class="nav-item">
+    <a class="nav-link nav-link-premium" href="{% url 'dashboard:bibliothecaire_notifications' %}">
+        <i class="bi bi-bell me-1"></i>Notifications
+        {% if paiements_attente_count > 0 %}
+        <span class="badge bg-danger ms-1">{{ paiements_attente_count }}</span>
+        {% endif %}
+    </a>
+</li>
+{% endif %}
+            {% if request.user.is_staff %}
+            <a
+              class="nav-link nav-link-premium"
+              href="{% url 'dashboard:blacklist_admin' %}"
+            >
+              <i class="bi bi-slash-circle me-1"></i> Blacklist
+            </a>
+            {% endif %}
+            
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle d-flex align-items-center gap-2"
+                href="#"
+                role="button"
+                data-bs-toggle="dropdown"
+                style="color: white"
+              >
+                <div
+                  style="
+                    position: relative;
+                    width: 36px;
+                    height: 36px;
+                    flex-shrink: 0;
+                  "
+                >
+                  {% if request.user.photo_profil %}
+                  <img
+                    src="{{ request.user.photo_profil.url }}"
+                    style="
+                      width: 36px;
+                      height: 36px;
+                      border-radius: 50%;
+                      object-fit: cover;
+                    "
+                  />
+                  {% else %}
+                  <div
+                    style="
+                      width: 36px;
+                      height: 36px;
+                      background: linear-gradient(135deg, #6366f1, #ec4899);
+                      border-radius: 50%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-weight: 700;
+                      color: white;
+                      font-size: 0.85rem;
+                    "
+                  >
+                    {{ request.user.first_name|first|upper }}
+                  </div>
+                  {% endif %}
+
+                  <!-- Badge statut uniquement pour les non-admins -->
+                  {% if not request.user.is_staff %} {% if request.user.est_blackliste %}
+                  <div
+                    style="
+                      position: absolute;
+                      bottom: -2px;
+                      right: -2px;
+                      width: 14px;
+                      height: 14px;
+                      background: #ef4444;
+                      border-radius: 50%;
+                      border: 2px solid #0f172a;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    "
+                  >
+                    <i
+                      class="bi bi-x"
+                      style="font-size: 0.55rem; color: white; font-weight: 900"
+                    ></i>
+                  </div>
+                  {% else %}
+                  <div
+                    style="
+                      position: absolute;
+                      bottom: -2px;
+                      right: -2px;
+                      width: 14px;
+                      height: 14px;
+                      background: #10b981;
+                      border-radius: 50%;
+                      border: 2px solid #0f172a;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    "
+                  >
+                    <i
+                      class="bi bi-check"
+                      style="font-size: 0.55rem; color: white; font-weight: 900"
+                    ></i>
+                  </div>
+                  {% endif %} {% endif %}
+                </div>
+                <span>{{ user.first_name|default:"Utilisateur" }}</span>
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-end"
+                style="
+                  background: var(--dark-light);
+                  border: 1px solid var(--glass-border);
+                  border-radius: 16px;
+                  padding: 0.5rem;
+                "
+              >
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'users:profile' %}"
+                    style="
+                      color: #cbd5e1;
+                      border-radius: 12px;
+                      padding: 0.75rem 1rem;
+                    "
+                    ><i class="bi bi-person me-2"></i>Mon Profil</a
+                  >
+                </li>
+                <li>
+                  <hr
+                    class="dropdown-divider"
+                    style="border-color: var(--glass-border)"
+                  />
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item text-danger"
+                    href="{% url 'users:logout' %}"
+                    style="border-radius: 12px; padding: 0.75rem 1rem"
+                    ><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a
+                  >
+                </li>
+              </ul>
+            </li>
+            {% else %}
+            <li class="nav-item">
+              <a
+                class="nav-link nav-link-premium"
+                href="{% url 'users:login' %}"
+              >
+                <i class="bi bi-box-arrow-in-right me-1"></i>Connexion
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="btn btn-glow ms-2" href="{% url 'users:register' %}">
+                <i class="bi bi-person-plus me-1"></i>Inscription
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container mt-4">
+      {% for message in messages %}
+      <div
+        class="alert alert-premium alert-dismissible fade show d-flex align-items-center"
+        role="alert"
+        data-aos="fade-down"
+      >
+        <i
+          class="bi bi-info-circle-fill me-3 fs-4"
+          style="color: var(--primary)"
+        ></i>
+        <div>{{ message }}</div>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="alert"
+        ></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Content -->
+    <main>{% block content %}{% endblock %}</main>
+
+    <!-- Footer -->
+    <footer class="footer-premium">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <h4
+              class="fw-bold mb-2"
+              style="
+                background: linear-gradient(135deg, #fff, #a5b4fc);
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+              "
+            >
+              <i class="bi bi-book-half me-2"></i>BiblIntel
+            </h4>
+            <p class="mb-0" style="color: #64748b">
+              Bibliothèque numérique intelligente pour la gestion des livres,
+              emprunts et utilisateurs.
+            </p>
+          </div>
+          <div class="col-md-6 text-md-end mt-3 mt-md-0">
+            <p class="mb-1" style="color: #475569">📱 +212 6000-00000</p>
+            <p class="mb-1" style="color: #475569">📧 BiblIntel@gmail.ma</p>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+      AOS.init({
+        duration: 800,
+        once: true,
+        offset: 100,
+      });
+    </script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

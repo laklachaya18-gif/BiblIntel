@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Notifications - BiblIntel{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div
+    class="d-flex justify-content-between align-items-center mb-4"
+    data-aos="fade-down"
+  >
+    <h2
+      class="fw-bold"
+      style="
+        background: linear-gradient(135deg, #fff, #a5b4fc);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      "
+    >
+      <i class="bi bi-bell me-2"></i>Notifications
+    </h2>
+    {% if non_lues_count > 0 %}
+    <span
+      class="badge"
+      style="
+        background: linear-gradient(135deg, var(--danger), #f87171);
+        padding: 0.6rem 1.2rem;
+        border-radius: 50px;
+        font-size: 1rem;
+      "
+    >
+      <i class="bi bi-envelope-exclamation me-1"></i>{{ non_lues_count }} non
+      lues
+    </span>
+    {% endif %}
+  </div>
+
+  <div class="glass-card" data-aos="fade-up">
+    {% for notif in notifications %}
+    <div
+      class="notification-row p-4"
+      data-read="{% if notif.lu %}true{% else %}false{% endif %}"
+      style="border-bottom: 1px solid var(--glass-border); transition: all 0.3s"
+    >
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1">
+          <div class="d-flex align-items-center gap-3 mb-2">
+            <div
+              class="notif-dot"
+              style="
+                width: 10px;
+                height: 10px;
+                background: var(--primary);
+                border-radius: 50%;
+                flex-shrink: 0;
+                display: none;
+                box-shadow: 0 0 10px var(--primary);
+              "
+            ></div>
+            <h5 class="notif-title fw-bold mb-0" style="color: #e2e8f0">
+              {{ notif.titre }}
+            </h5>
+          </div>
+          <p style="color: #94a3b8; margin-bottom: 0.5rem">
+            {{ notif.message }}
+          </p>
+          <small style="color: #64748b"
+            ><i class="bi bi-clock me-1"></i>{{ notif.date_creation|date:"d/m/Y H:i" }}</small
+          >
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-5">
+      <i
+        class="bi bi-bell-slash display-1 mb-4 d-block"
+        style="color: var(--primary); opacity: 0.3"
+      ></i>
+      <h4 style="color: #64748b">Aucune notification</h4>
+      <p style="color: #475569">
+        Vous serez notifié des événements importants ici
+      </p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  (function () {
+    var rows = document.querySelectorAll(".notification-row");
+    rows.forEach(function (row) {
+      var isRead = row.getAttribute("data-read") === "true";
+      var title = row.querySelector(".notif-title");
+      var dot = row.querySelector(".notif-dot");
+      if (!isRead) {
+        row.style.background = "rgba(99, 102, 241, 0.05)";
+        if (title) title.style.color = "#a5b4fc";
+        if (dot) dot.style.display = "block";
+      }
+    });
+  })();
+</script>
+{% endblock %}

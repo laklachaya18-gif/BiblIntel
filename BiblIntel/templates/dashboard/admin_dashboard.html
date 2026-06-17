@@ -1,0 +1,626 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard Admin - BiblIntel{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4">
+
+  <h1 class="fw-bold mb-4" data-aos="fade-down" style="background:linear-gradient(135deg,#fff,#a5b4fc);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+    <i class="bi bi-speedometer2 me-2"></i>Tableau de bord Administrateur
+  </h1>
+
+  <!-- ══ KPI CARDS ══════════════════════════════════════════════════════ -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-2 col-sm-4 col-6" data-aos="fade-up" data-aos-delay="0">
+      <a href="{% url 'books:livre_list' %}" style="text-decoration:none">
+        <div class="stat-glow">
+          <div class="stat-glow-number">{{ total_livres }}</div>
+          <div class="stat-glow-label"><i class="bi bi-book me-1"></i>Livres</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-2 col-sm-4 col-6" data-aos="fade-up" data-aos-delay="60">
+      <a href="{% url 'users:user_list' %}" style="text-decoration:none">
+        <div class="stat-glow" style="border-top-color:var(--secondary)">
+          <div class="stat-glow-number" style="background:linear-gradient(135deg,var(--secondary),#f9a8d4);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">{{ total_utilisateurs }}</div>
+          <div class="stat-glow-label"><i class="bi bi-people me-1"></i>Utilisateurs</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-2 col-sm-4 col-6" data-aos="fade-up" data-aos-delay="120">
+      <a href="{% url 'borrowings:emprunt_list' %}?statut=en_cours" style="text-decoration:none">
+        <div class="stat-glow" style="border-top-color:var(--success)">
+          <div class="stat-glow-number" style="background:linear-gradient(135deg,var(--success),#34d399);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">{{ emprunts_en_cours }}</div>
+          <div class="stat-glow-label"><i class="bi bi-journal-arrow-down me-1"></i>En cours</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-2 col-sm-4 col-6" data-aos="fade-up" data-aos-delay="180">
+      <a href="{% url 'borrowings:emprunt_list' %}?statut=en_attente" style="text-decoration:none">
+        <div class="stat-glow" style="border-top-color:#8b5cf6">
+          <div class="stat-glow-number" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">{{ en_attente_fifo }}</div>
+          <div class="stat-glow-label"><i class="bi bi-hourglass-split me-1"></i>File FIFO</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-2 col-sm-4 col-6" data-aos="fade-up" data-aos-delay="240">
+      <a href="{% url 'borrowings:emprunt_list' %}?statut=retard" style="text-decoration:none">
+        <div class="stat-glow" style="border-top-color:var(--danger)">
+          <div class="stat-glow-number" style="background:linear-gradient(135deg,var(--danger),#f87171);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">{{ retards }}</div>
+          <div class="stat-glow-label"><i class="bi bi-exclamation-triangle me-1"></i>Retards</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-2 col-sm-4 col-6" data-aos="fade-up" data-aos-delay="300">
+      <a href="{% url 'dashboard:blacklist_admin' %}" style="text-decoration:none">
+        <div class="stat-glow" style="border-top-color:#f97316">
+          <div class="stat-glow-number" style="background:linear-gradient(135deg,#f97316,#fbbf24);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">{{ blacklistes }}</div>
+          <div class="stat-glow-label"><i class="bi bi-slash-circle me-1"></i>Blacklistés</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- ══ LIENS RAPIDES ══════════════════════════════════════════════════ -->
+  <div class="row g-2 mb-4" data-aos="fade-up">
+    <div class="col-auto"><a href="{% url 'books:livre_create' %}" class="btn btn-glow"><i class="bi bi-plus-circle me-2"></i>Ajouter un livre</a></div>
+    <div class="col-auto"><a href="{% url 'users:user_list' %}" class="btn btn-glow" style="background:linear-gradient(135deg,var(--secondary),#f9a8d4)"><i class="bi bi-people me-2"></i>Utilisateurs</a></div>
+    <div class="col-auto"><a href="{% url 'borrowings:emprunt_list' %}" class="btn btn-glow" style="background:linear-gradient(135deg,var(--success),#34d399)"><i class="bi bi-journal me-2"></i>Emprunts</a></div>
+    <div class="col-auto"><a href="{% url 'logs:log_list' %}" class="btn btn-glow" style="background:linear-gradient(135deg,#64748b,#94a3b8)"><i class="bi bi-journal-text me-2"></i>Logs</a></div>
+    <div class="col-auto"><a href="{% url 'borrowings:amende_list' %}" class="btn btn-glow" style="background:linear-gradient(135deg,var(--accent),#fbbf24)"><i class="bi bi-cash-coin me-2"></i>Amendes — {{ total_amendes }} DH</a></div>
+  </div>
+
+  <!-- ══ ROW 1 : CAMEMBERT RÔLES + ACTIVITÉ CONNEXIONS ══════════════════ -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4" data-aos="fade-up">
+      <div class="glass-card h-100">
+        <h5 class="fw-bold mb-3" style="color:#a5b4fc"><i class="bi bi-pie-chart-fill me-2"></i>Utilisateurs par rôle</h5>
+        <div style="position:relative;height:220px">
+          <canvas id="rolesChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8" data-aos="fade-up" data-aos-delay="100">
+      <div class="glass-card h-100">
+        <h5 class="fw-bold mb-3" style="color:#a5b4fc"><i class="bi bi-activity me-2"></i>Activité connexions (7 derniers jours)</h5>
+        <div style="position:relative;height:220px">
+          <canvas id="activiteChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ROW 2 : TOP LIVRES + LIVRES PAR CATÉGORIE ══════════════════════ -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6" data-aos="fade-up">
+      <div class="glass-card h-100">
+        <h5 class="fw-bold mb-3" style="color:#a5b4fc"><i class="bi bi-trophy-fill me-2"></i>Top livres empruntés</h5>
+        <div style="position:relative;height:240px">
+          <canvas id="topLivresChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
+      <div class="glass-card h-100">
+        <h5 class="fw-bold mb-3" style="color:#a5b4fc"><i class="bi bi-tags-fill me-2"></i>Livres par catégorie</h5>
+        <div style="position:relative;height:240px">
+          <canvas id="catsChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ROW 3 : ÉVOLUTION EMPRUNTS ════════════════════════════════════ -->
+  <div class="glass-card mb-4" data-aos="fade-up">
+    <h5 class="fw-bold mb-3" style="color:#a5b4fc"><i class="bi bi-graph-up me-2"></i>Évolution des emprunts (6 derniers mois)</h5>
+    <div style="position:relative;height:200px">
+      <canvas id="empruntsChart"></canvas>
+    </div>
+  </div>
+
+  <!-- ══ TABLE BIBLIOTHÉCAIRES ══════════════════════════════════════════ -->
+  <div class="glass-card mb-4" data-aos="fade-up">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h5 class="fw-bold mb-0" style="color:#fbbf24">
+        <i class="bi bi-person-badge-fill me-2"></i>Tableau des bibliothécaires
+      </h5>
+      <span class="badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;padding:0.5rem 1rem;border-radius:50px">
+        {{ bibliothecaires|length }} bibliothécaire{{ bibliothecaires|length|pluralize }}
+      </span>
+    </div>
+    {% if bibliothecaires %}
+    <div class="table-responsive">
+      <table class="table mb-0" style="color:#cbd5e1">
+        <thead>
+          <tr style="border-color:rgba(255,255,255,0.08)">
+            <th style="color:#94a3b8">#</th>
+            <th style="color:#94a3b8">Bibliothécaire</th>
+            <th style="color:#94a3b8">Livres ajoutés</th>
+            <th style="color:#94a3b8">Statut compte</th>
+            <th style="color:#94a3b8">Dernière connexion</th>
+            <th style="color:#94a3b8">Actions</th>
+           </tr>
+        </thead>
+        <tbody>
+          {% for f in bibliothecaires %}
+          <tr style="border-color:rgba(255,255,255,0.05);cursor:pointer"
+              onclick="toggleLivres('livres-{{ f.pk }}')"
+              title="Cliquer pour voir les livres ajoutés">
+            <td style="color:#64748b;font-size:0.85rem">{{ forloop.counter }}</td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#f59e0b,#fbbf24)">
+                  {% if f.photo_profil %}
+                    <img src="{{ f.photo_profil.url }}" alt="avatar" style="width:100%;height:100%;object-fit:cover">
+                  {% else %}
+                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:bold;color:white">{{ f.first_name|first }}{{ f.last_name|first }}</div>
+                  {% endif %}
+                </div>
+                <div>
+                  <div style="font-weight:600">{{ f.first_name }} {{ f.last_name }}</div>
+                  <small style="color:#64748b">@{{ f.username }} · {{ f.email }}</small>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span style="color:#fbbf24;font-weight:700;font-size:1.2rem">{{ f.nb_livres_ajoutes }}</span>
+              <small style="color:#64748b"> livre{{ f.nb_livres_ajoutes|pluralize }}</small>
+              {% if f.nb_livres_ajoutes > 0 %}
+              <i class="bi bi-chevron-down ms-2" style="color:#64748b;font-size:0.75rem" id="icon-{{ f.pk }}"></i>
+              {% endif %}
+            </td>
+            <td>
+              {% if f.est_blackliste %}
+                <span class="badge" style="background:rgba(239,68,68,0.2);color:#f87171;padding:0.35rem 0.8rem;border-radius:50px">
+                  <i class="bi bi-slash-circle me-1"></i>Blacklisté
+                </span>
+              {% else %}
+                <span class="badge" style="background:rgba(16,185,129,0.2);color:#34d399;padding:0.35rem 0.8rem;border-radius:50px">
+                  <i class="bi bi-check-circle me-1"></i>Actif
+                </span>
+              {% endif %}
+            </td>
+            <td style="color:#94a3b8;font-size:0.85rem">
+              {% if f.derniere_connexion %}
+                <i class="bi bi-clock me-1"></i>{{ f.derniere_connexion|date:"d/m/Y H:i" }}
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              <div class="d-flex gap-2">
+                <a href="{% url 'users:user_detail' f.pk %}"
+                   class="btn btn-sm"
+                   style="background:rgba(99,102,241,0.2);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);border-radius:10px"
+                   onclick="event.stopPropagation()">
+                  <i class="bi bi-eye me-1"></i>Profil
+                </a>
+                <a href="{% url 'dashboard:admin_bibliothecaire_detail' f.pk %}"
+                   class="btn btn-sm"
+                   style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);border-radius:10px"
+                   onclick="event.stopPropagation()"
+                   title="Voir le détail du salaire">
+                  <i class="bi bi-cash-coin me-1"></i>Salaire
+                </a>
+              </div>
+            </td>
+          </tr>
+
+          {# ── Ligne expandable : liste des livres ajoutés ── #}
+          {% if f.nb_livres_ajoutes > 0 %}
+          <tr id="livres-{{ f.pk }}" style="display:none;background:rgba(245,158,11,0.03)">
+            <td colspan="6" style="padding:0.5rem 1rem 1rem 3rem">
+              <div style="border-left:3px solid rgba(245,158,11,0.4);padding-left:1rem">
+                <div style="color:#fbbf24;font-size:0.8rem;font-weight:600;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em">
+                  <i class="bi bi-book me-1"></i>Livres ajoutés par {{ f.first_name }}
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm mb-0" style="color:#94a3b8;font-size:0.85rem">
+                    <thead>
+                      <tr>
+                        <th style="color:#64748b;font-weight:500">Titre</th>
+                        <th style="color:#64748b;font-weight:500">Catégorie</th>
+                        <th style="color:#64748b;font-weight:500">Statut</th>
+                        <th style="color:#64748b;font-weight:500">Date ajout</th>
+                        <th style="color:#64748b;font-weight:500">Emprunts</th>
+                        <th style="color:#64748b;font-weight:500">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for livre in f.livres_ajoutes_bibliothecaire.all %}
+                      <tr style="border-color:rgba(255,255,255,0.04)">
+                        <td>
+                          <div class="d-flex align-items-center gap-2">
+                            {% if livre.couverture %}
+                              <img src="{{ livre.couverture.url }}" style="width:28px;height:38px;object-fit:cover;border-radius:4px">
+                            {% else %}
+                              <div style="width:28px;height:38px;background:linear-gradient(135deg,#6366f1,#ec4899);border-radius:4px;display:flex;align-items:center;justify-content:center">
+                                <i class="bi bi-book" style="font-size:0.65rem;color:white"></i>
+                              </div>
+                            {% endif %}
+                            <span style="color:#e2e8f0;font-weight:500">{{ livre.titre|truncatechars:35 }}</span>
+                          </div>
+                        </td>
+                        <td>
+                          {% for cat in livre.categories.all %}
+                            <span style="background:rgba(99,102,241,0.15);color:#a5b4fc;padding:0.15rem 0.5rem;border-radius:50px;font-size:0.75rem">{{ cat.nom }}</span>
+                          {% empty %}—{% endfor %}
+                        </td>
+                        <td>
+                          <span style="font-size:0.78rem;
+                            {% if livre.statut == 'disponible' %}color:#34d399{% elif livre.statut == 'emprunte' %}color:#fbbf24{% elif livre.statut == 'reserve' %}color:#a5b4fc{% else %}color:#94a3b8{% endif %}">
+                            {{ livre.get_statut_display }}
+                          </span>
+                        </td>
+                        <td>{{ livre.date_ajout|date:"d/m/Y" }}</td>
+                        <td style="color:#fbbf24">{{ livre.nombre_emprunts }}</td>
+                        <td>
+                          <div class="d-flex gap-1">
+                            <a href="{% url 'books:livre_detail' livre.pk %}"
+                               class="btn btn-sm"
+                               style="background:rgba(99,102,241,0.2);color:#a5b4fc;border:none;border-radius:8px;padding:0.2rem 0.5rem"
+                               onclick="event.stopPropagation()">
+                              <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'books:livre_update' livre.pk %}"
+                               class="btn btn-sm"
+                               style="background:rgba(100,116,139,0.2);color:#94a3b8;border:none;border-radius:8px;padding:0.2rem 0.5rem"
+                               onclick="event.stopPropagation()">
+                              <i class="bi bi-pencil"></i>
+                            </a>
+                          </div>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-4">
+      <i class="bi bi-person-badge display-4" style="color:#f59e0b;opacity:0.3"></i>
+      <p class="mt-3" style="color:#64748b">Aucun bibliothécaire enregistré.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ══ TABLEAU DES ACTIONS DES BIBLIOTHÉCAIRES (CRUD) ══════════════════ -->
+  <div class="glass-card mb-4" data-aos="fade-up">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold mb-0" style="color:#a5b4fc">
+        <i class="bi bi-journal-text me-2"></i>Actions des bibliothécaires (CRUD livres)
+      </h5>
+      <span class="badge" style="background:rgba(99,102,241,0.2);color:#a5b4fc;padding:0.5rem 1rem;border-radius:50px">
+        {{ actions_bibliothecaires|length }} action(s)
+      </span>
+    </div>
+
+    {% if actions_bibliothecaires %}
+    <div class="table-responsive">
+      <table class="table mb-0" style="color:#cbd5e1">
+        <thead>
+          <tr style="border-color:rgba(255,255,255,0.08)">
+            <th style="color:#94a3b8">Bibliothécaire</th>
+            <th style="color:#94a3b8">Action</th>
+            <th style="color:#94a3b8">Livre concerné</th>
+            <th style="color:#94a3b8">Date & heure</th>
+            <th style="color:#94a3b8">IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for action in actions_bibliothecaires %}
+          <tr style="border-color:rgba(255,255,255,0.05)">
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#fbbf24);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:0.75rem">
+                  {{ action.utilisateur.first_name|first }}{{ action.utilisateur.last_name|first }}
+                </div>
+                {{ action.utilisateur.first_name }} {{ action.utilisateur.last_name }}
+                <small style="color:#64748b">(@{{ action.utilisateur.username }})</small>
+              </div>
+            </td>
+            <td>
+              <span class="badge" style="
+                {% if 'Ajout' in action.description %}background:rgba(16,185,129,0.2);color:#34d399
+                {% elif 'Modification' in action.description %}background:rgba(245,158,11,0.2);color:#fbbf24
+                {% elif 'Suppression' in action.description %}background:rgba(239,68,68,0.2);color:#f87171
+                {% else %}background:rgba(99,102,241,0.2);color:#a5b4fc{% endif %}
+              ">
+                {% if 'Ajout' in action.description %}➕ AJOUT
+                {% elif 'Modification' in action.description %}✏️ MODIFICATION
+                {% elif 'Suppression' in action.description %}🗑️ SUPPRESSION
+                {% else %}{{ action.type_action|upper }}{% endif %}
+              </span>
+            </td>
+            <td style="color:#e2e8f0">{{ action.description|truncatechars:60 }}</td>
+            <td style="color:#94a3b8;font-size:0.85rem">{{ action.date_action|date:"d/m/Y H:i:s" }}</td>
+            <td style="color:#64748b;font-size:0.8rem">{{ action.ip_adresse|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-4">
+      <i class="bi bi-journal-text display-4" style="color:#64748b;opacity:0.5"></i>
+      <p class="mt-2" style="color:#64748b">Aucune action enregistrée pour les bibliothécaires.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ══ ROW 4 : LISTES EXISTANTES ════════════════════════════════════ -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4" data-aos="fade-up">
+      <div class="glass-card h-100">
+        <h5 class="fw-bold mb-3" style="color:#a5b4fc"><i class="bi bi-trophy me-2"></i>Top livres</h5>
+        {% for livre in livres_populaires %}
+        <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--glass-border)">
+          <div class="d-flex align-items-center gap-2">
+            <span style="color:#64748b;font-size:0.8rem;min-width:20px">#{{ forloop.counter }}</span>
+            <div>
+              <div style="color:#e2e8f0;font-size:0.9rem">{{ livre.titre|truncatechars:28 }}</div>
+              <div style="color:#64748b;font-size:0.75rem">{{ livre.auteur }}</div>
+            </div>
+          </div>
+          <span style="color:var(--primary);font-weight:700;font-size:0.85rem">{{ livre.nb_emprunts_total }}</span>
+        </div>
+        {% empty %}<p style="color:#64748b">Aucun emprunt.</p>{% endfor %}
+      </div>
+    </div>
+
+    <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
+      <div class="glass-card h-100">
+        <h5 class="fw-bold mb-3" style="color:#a5b4fc"><i class="bi bi-people-fill me-2"></i>Utilisateurs actifs</h5>
+        {% for u in utilisateurs_actifs %}
+        <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--glass-border)">
+          <div class="d-flex align-items-center gap-2">
+            <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,var(--primary),var(--secondary))">
+              {% if u.photo_profil %}<img src="{{ u.photo_profil.url }}" alt="avatar" style="width:100%;height:100%;object-fit:cover">
+              {% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:bold;color:white">{{ u.first_name|first }}{{ u.last_name|first }}</div>{% endif %}
+            </div>
+            <div>
+              <div style="color:#e2e8f0;font-size:0.9rem">{{ u.first_name }} {{ u.last_name }}</div>
+              <div style="color:#64748b;font-size:0.75rem">{{ u.get_status_display }}</div>
+            </div>
+          </div>
+          <span style="color:var(--secondary);font-weight:700;font-size:0.85rem">{{ u.nb_emprunts }} emp.</span>
+        </div>
+        {% empty %}<p style="color:#64748b">Aucune activité.</p>{% endfor %}
+      </div>
+    </div>
+
+    <div class="col-lg-4" data-aos="fade-up" data-aos-delay="200">
+      <div class="glass-card h-100">
+        <h5 class="fw-bold mb-3" style="background:linear-gradient(135deg,#fff,#fbbf24);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent"><i class="bi bi-star-fill me-2" style="color:#fbbf24"></i>Classement fidélité</h5>
+        {% for u in classement_fidelite %}
+        <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--glass-border)">
+          <div class="d-flex align-items-center gap-2">
+            <span style="color:#fbbf24;font-size:0.8rem;min-width:20px">#{{ forloop.counter }}</span>
+            <div style="color:#e2e8f0;font-size:0.9rem">{{ u.first_name }} {{ u.last_name }}</div>
+          </div>
+          <span style="color:#fbbf24;font-weight:700">{{ u.points_fidelite }} pts</span>
+        </div>
+        {% empty %}<p style="color:#64748b">Aucun point.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RETARDS ════════════════════════════════════════════════════════ -->
+  {% if emprunts_retard %}
+  <div class="glass-card mt-2 mb-4" data-aos="fade-up" style="border-color:rgba(239,68,68,0.2)">
+    <h5 class="fw-bold mb-4" style="color:#f87171"><i class="bi bi-exclamation-octagon me-2"></i>Retards en cours — Amendes impayées</h5>
+    <div class="table-responsive">
+      <table class="table mb-0" style="color:#cbd5e1">
+        <thead>
+          <tr style="border-color:rgba(255,255,255,0.08)">
+            <th style="color:#94a3b8">Utilisateur</th>
+            <th style="color:#94a3b8">Livre</th>
+            <th style="color:#94a3b8">Retour prévu</th>
+            <th style="color:#94a3b8">Retard</th>
+            <th style="color:#94a3b8">Amende</th>
+            <th style="color:#94a3b8">Payée</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in emprunts_retard %}
+          <tr style="border-color:rgba(255,255,255,0.05)">
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,var(--primary),var(--secondary))">
+                  {% if emp.utilisateur.photo_profil %}<img src="{{ emp.utilisateur.photo_profil.url }}" alt="avatar" style="width:100%;height:100%;object-fit:cover">
+                  {% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:bold;color:white">{{ emp.utilisateur.first_name|first }}{{ emp.utilisateur.last_name|first }}</div>{% endif %}
+                </div>
+                {{ emp.utilisateur.first_name }} {{ emp.utilisateur.last_name }}
+              </div>
+            </td>
+            <td>{{ emp.livre.titre|truncatechars:30 }}</td>
+            <td style="color:#f87171">{{ emp.date_retour_prevue|date:"d/m/Y" }}</td>
+            <td style="color:#f87171;font-weight:600">{{ emp.calculer_retard }} j</td>
+            <td style="color:#fbbf24;font-weight:700">{{ emp.amende_totale }} DH</td>
+            <td>
+              {% if emp.est_payee %}<span style="color:#34d399"><i class="bi bi-check-circle-fill"></i></span>
+              {% else %}<span style="color:#f87171"><i class="bi bi-x-circle-fill"></i></span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ══ DERNIERS EMPRUNTS ══════════════════════════════════════════════ -->
+  <div class="glass-card mt-2" data-aos="fade-up">
+    <h5 class="fw-bold mb-4" style="background:linear-gradient(135deg,#fff,#a5b4fc);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent"><i class="bi bi-clock-history me-2"></i>Derniers emprunts</h5>
+    <div class="table-responsive">
+      <table class="table mb-0" style="color:#cbd5e1">
+        <thead>
+          <tr style="border-color:rgba(255,255,255,0.08)">
+            <th style="color:#94a3b8">Utilisateur</th>
+            <th style="color:#94a3b8">Livre</th>
+            <th style="color:#94a3b8">Statut</th>
+            <th style="color:#94a3b8">Date</th>
+            <th style="color:#94a3b8">Retour prévu</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in derniers_emprunts %}
+          <tr style="border-color:rgba(255,255,255,0.05)">
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,var(--primary),var(--secondary))">
+                  {% if emp.utilisateur.photo_profil %}<img src="{{ emp.utilisateur.photo_profil.url }}" alt="avatar" style="width:100%;height:100%;object-fit:cover">
+                  {% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:bold;color:white">{{ emp.utilisateur.first_name|first }}{{ emp.utilisateur.last_name|first }}</div>{% endif %}
+                </div>
+                <span>{{ emp.utilisateur.first_name }} {{ emp.utilisateur.last_name }}</span>
+              </div>
+            </td>
+            <td>{{ emp.livre.titre|truncatechars:40 }}</td>
+            <td>
+              <span class="book-status-premium {% if emp.statut == 'en_cours' %}status-dispo{% elif emp.statut == 'retard' %}status-empr{% elif emp.statut == 'retourne' %}status-arch{% else %}status-res{% endif %}">
+                {{ emp.get_statut_display }}
+              </span>
+            </td>
+            <td style="color:#94a3b8">{{ emp.date_demande|date:"d/m/Y" }}</td>
+            <td style="color:#94a3b8">{{ emp.date_retour_prevue|date:"d/m/Y"|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <td><td colspan="5" class="text-center py-4" style="color:#64748b">Aucun emprunt</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ CHART.JS ════════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const chartDefaults = {
+  color: '#94a3b8',
+  plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Outfit' } } } },
+  scales: {
+    x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+    y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+  }
+};
+
+// ── Camembert rôles ────────────────────────────────────────────────────
+new Chart(document.getElementById('rolesChart'), {
+  type: 'doughnut',
+  data: {
+    labels: {{ roles_labels|safe }},
+    datasets: [{
+      data: {{ roles_data|safe }},
+      backgroundColor: ['#6366f1','#ec4899','#f59e0b','#10b981'],
+      borderColor: '#1e293b', borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { family: 'Outfit' } } } }
+  }
+});
+
+// ── Activité connexions ────────────────────────────────────────────────
+new Chart(document.getElementById('activiteChart'), {
+  type: 'line',
+  data: {
+    labels: {{ activite_labels|safe }},
+    datasets: [{
+      label: 'Connexions',
+      data: {{ activite_data|safe }},
+      borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)',
+      fill: true, tension: 0.4, pointRadius: 2
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, ...chartDefaults }
+});
+
+// ── Top livres ────────────────────────────────────────────────────────
+new Chart(document.getElementById('topLivresChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ top_livres_labels|safe }},
+    datasets: [{
+      label: 'Emprunts',
+      data: {{ top_livres_data|safe }},
+      backgroundColor: 'rgba(99,102,241,0.7)', borderColor: '#6366f1', borderWidth: 1
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { display: false } }
+    }
+  }
+});
+
+// ── Livres par catégorie ──────────────────────────────────────────────
+new Chart(document.getElementById('catsChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ cats_labels|safe }},
+    datasets: [{
+      label: 'Livres',
+      data: {{ cats_data|safe }},
+      backgroundColor: ['#6366f1','#ec4899','#f59e0b','#10b981','#8b5cf6','#f97316','#0ea5e9','#14b8a6'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { display: false } },
+      y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+    }
+  }
+});
+
+// ── Évolution emprunts ────────────────────────────────────────────────
+new Chart(document.getElementById('empruntsChart'), {
+  type: 'line',
+  data: {
+    labels: {{ emp_labels|safe }},
+    datasets: [{
+      label: 'Emprunts',
+      data: {{ emp_data|safe }},
+      borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)',
+      fill: true, tension: 0.4, pointRadius: 2
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, ...chartDefaults }
+});
+</script>
+<script>
+function toggleLivres(id) {
+  const row = document.getElementById(id);
+  if (!row) return;
+  const fPk = id.replace('livres-', '');
+  const icon = document.getElementById('icon-' + fPk);
+  if (row.style.display === 'none') {
+    row.style.display = 'table-row';
+    if (icon) icon.style.transform = 'rotate(180deg)';
+  } else {
+    row.style.display = 'none';
+    if (icon) icon.style.transform = 'rotate(0deg)';
+  }
+}
+</script>
+{% endblock %}

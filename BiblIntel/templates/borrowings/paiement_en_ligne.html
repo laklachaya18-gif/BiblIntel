@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Paiement en ligne - BiblIntel{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="glass-card" data-aos="fade-up">
+        <div class="text-center mb-4">
+          <div
+            class="d-inline-flex align-items-center justify-content-center mb-3"
+            style="
+              width: 70px;
+              height: 70px;
+              background: linear-gradient(135deg, var(--primary), var(--secondary));
+              border-radius: 20px;
+            "
+          >
+            <i class="bi bi-credit-card fs-2 text-white"></i>
+          </div>
+          <h2 class="fw-bold" style="background: linear-gradient(135deg, #fff, #a5b4fc); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Paiement en ligne
+          </h2>
+          <p style="color: #64748b">Amende : <strong class="text-warning">{{ emprunt.amende_totale }} DH</strong></p>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+          
+          <div class="mb-3">
+            <label class="form-label-premium">Numéro de carte (16 chiffres)</label>
+            <input type="text" name="numero_carte" class="form-control form-control-premium" 
+                   maxlength="16" pattern="\d{16}" required placeholder="4111 1111 1111 1111">
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label-premium">Date d'expiration (MM/YY)</label>
+              <input type="text" name="expiration" class="form-control form-control-premium" 
+                     maxlength="5" placeholder="12/28" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label-premium">Cryptogramme (CVV)</label>
+              <input type="text" name="cvv" class="form-control form-control-premium" 
+                     maxlength="3" pattern="\d{3}" required placeholder="123">
+            </div>
+          </div>
+
+          <div class="alert alert-info" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); color: #a5b4fc;">
+            <i class="bi bi-info-circle me-2"></i>
+            Compte de démonstration : solde de <strong>500 DH</strong> par défaut.
+          </div>
+
+          <button type="submit" class="btn btn-glow w-100 py-3">
+            <i class="bi bi-shield-check me-2"></i>Payer {{ emprunt.amende_totale }} DH
+          </button>
+        </form>
+
+        <div class="text-center mt-4">
+          <a href="{% url 'borrowings:emprunt_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Retour
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

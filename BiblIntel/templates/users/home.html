@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+{% block title %}Accueil - BiblIntel{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="position-relative overflow-hidden py-5">
+  <div
+    class="position-absolute"
+    style="
+      top: 10%;
+      left: 10%;
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 50%;
+      opacity: 0.1;
+      filter: blur(80px);
+    "
+  ></div>
+  <div
+    class="position-absolute"
+    style="
+      bottom: 10%;
+      right: 10%;
+      width: 250px;
+      height: 250px;
+      background: linear-gradient(135deg, var(--accent), var(--secondary));
+      border-radius: 50%;
+      opacity: 0.08;
+      filter: blur(60px);
+    "
+  ></div>
+
+  <div class="container text-center py-5" data-aos="fade-up">
+    <div
+      class="d-inline-flex align-items-center gap-2 px-4 py-2 mb-4"
+      style="
+        background: var(--glass);
+        border: 1px solid var(--glass-border);
+        border-radius: 50px;
+        backdrop-filter: blur(10px);
+      "
+    >
+      <span
+        class="pulse-glow d-inline-block"
+        style="
+          width: 8px;
+          height: 8px;
+          background: var(--success);
+          border-radius: 50%;
+        "
+      ></span>
+      <span style="color: #94a3b8; font-size: 0.9rem"
+        >Système opérationnel</span
+      >
+    </div>
+    <h1
+      class="display-3 fw-bold mb-4"
+      style="
+        background: linear-gradient(
+          135deg,
+          #fff 0%,
+          #a5b4fc 50%,
+          var(--secondary) 100%
+        );
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      "
+    >
+      Bienvenue sur BiblIntel
+    </h1>
+    <p class="lead mb-0 mx-auto" style="color: #64748b; max-width: 600px">
+      Votre bibliothèque numérique intelligente pour la gestion des livres,
+      emprunts et bien plus encore.
+    </p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <!-- Stats -->
+  <div class="row g-4 mb-5">
+    {% if user.is_staff %}
+    <!-- Stats admin -->
+    <div class="col-md-4" data-aos="fade-up" data-aos-delay="0">
+      <div class="stat-glow">
+        <div class="stat-glow-number">{{ total_livres }}</div>
+<div class="stat-glow-label"><i class="bi bi-book me-2"></i>Livres</div>
+      </div>
+    </div>
+    <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+      <div class="stat-glow" style="border-top-color: var(--secondary)">
+        <div
+          class="stat-glow-number"
+          style="
+            background: linear-gradient(135deg, var(--secondary), #f9a8d4);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          {{ total_utilisateurs }}
+        </div>
+        <div class="stat-glow-label">
+          <i class="bi bi-people me-2" style="color: var(--secondary)"></i
+          >Utilisateurs
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+      <div class="stat-glow" style="border-top-color: var(--success)">
+        <div
+          class="stat-glow-number"
+          style="
+            background: linear-gradient(135deg, var(--success), #34d399);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          {{ emprunts_en_cours }}
+        </div>
+        <div class="stat-glow-label">
+          <i
+            class="bi bi-journal-arrow-down me-2"
+            style="color: var(--success)"
+          ></i
+          >Emprunts en cours
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <!-- Stats utilisateur -->
+    <div class="col-md-4" data-aos="fade-up" data-aos-delay="0">
+      <div class="stat-glow">
+        <div class="stat-glow-number">{{ livres|length }}</div>
+        <div class="stat-glow-label">
+          <i class="bi bi-book me-2"></i>Livres disponibles
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+      <div class="stat-glow" style="border-top-color: var(--accent)">
+        <div
+          class="stat-glow-number"
+          style="
+            background: linear-gradient(135deg, var(--accent), #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          {{ user.points_fidelite }}
+        </div>
+        <div class="stat-glow-label">
+          <i class="bi bi-star-fill me-2" style="color: var(--accent)"></i
+          >Points fidélité
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+      <div class="stat-glow" style="border-top-color: var(--success)">
+        <div
+          class="stat-glow-number"
+          style="
+            background: linear-gradient(135deg, var(--success), #34d399);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          {{ user.emprunts.count|default:0 }}
+        </div>
+        <div class="stat-glow-label">
+          <i
+            class="bi bi-journal-arrow-down me-2"
+            style="color: var(--success)"
+          ></i
+          >Mes emprunts
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Recent Books -->
+  <div
+    class="d-flex justify-content-between align-items-center mb-4"
+    data-aos="fade-right"
+  >
+    <h3 class="fw-bold mb-0">
+      <i class="bi bi-clock-history me-2" style="color: var(--primary)"></i
+      >Livres récemment ajoutés
+    </h3>
+    <a href="{% url 'books:livre_list' %}" class="btn btn-glow">
+      Voir tous <i class="bi bi-arrow-right ms-2"></i>
+    </a>
+  </div>
+
+  <div class="row g-4">
+    {% for livre in livres %}
+    <div
+      class="col-md-6 col-lg-4"
+      data-aos="fade-up"
+      data-aos-delay="{{ forloop.counter0|add:1 }}00"
+    >
+      <div class="book-premium">
+        <div class="book-cover-premium">
+          {% if livre.couverture %}
+          <img src="{{ livre.couverture.url }}" alt="{{ livre.titre }}" />
+          {% else %}
+          <div
+            class="w-100 h-100 d-flex align-items-center justify-content-center"
+            style="
+              background: linear-gradient(
+                135deg,
+                var(--primary),
+                var(--secondary)
+              );
+            "
+          >
+            <i class="bi bi-book fs-1 text-white opacity-50"></i>
+          </div>
+          {% endif %}
+          <div class="book-cover-overlay">
+            <span class="book-status-premium status-dispo"
+              >{{ livre.get_statut_display }}</span
+            >
+          </div>
+        </div>
+        <div class="p-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="text-warning">
+              {% with note=livre.note_moyenne|default:0|add:0|floatformat:"0" %}
+              {% for i in "12345" %}
+                {% if forloop.counter <= note %}
+                  <i class="bi bi-star-fill"></i>
+                {% else %}
+                  <i class="bi bi-star"></i>
+                {% endif %}
+              {% endfor %}
+              {% endwith %}
+            </div>
+          </div>
+          <h5 class="fw-bold mb-1 text-truncate" title="{{ livre.titre }}">
+            {{ livre.titre }}
+          </h5>
+          <p class="mb-2" style="color: #64748b">
+            <i class="bi bi-person me-1"></i>{{ livre.auteur }}
+          </p>
+          <p
+            class="small mb-3"
+            style="color: #475569; height: 40px; overflow: hidden"
+          >
+            {{ livre.resume|truncatechars:60 }}
+          </p>
+          <a
+            href="{% url 'books:livre_detail' livre.pk %}"
+            class="btn btn-glow w-100"
+          >
+            <i class="bi bi-eye me-2"></i>Voir détails
+          </a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5" data-aos="fade-up">
+      <div class="glass-card d-inline-block">
+        <i
+          class="bi bi-inbox display-1"
+          style="color: var(--primary); opacity: 0.5"
+        ></i>
+        <h4 class="mt-3" style="color: #64748b">Aucun livre disponible</h4>
+        <p style="color: #475569">
+          Les livres apparaîtront ici une fois ajoutés
+        </p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

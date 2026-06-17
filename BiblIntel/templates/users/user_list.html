@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Gestion Utilisateurs - BiblIntel{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-5" data-aos="fade-down">
+    <div>
+      <h2 class="fw-bold mb-1" style="background: linear-gradient(135deg, #fff, #a5b4fc); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        <i class="bi bi-people me-2"></i>Gestion des utilisateurs
+      </h2>
+      <p style="color: #64748b; margin: 0">
+        Gestion des étudiants, enseignants, employeurs et personnes normales
+      </p>
+    </div>
+  </div>
+
+  <div class="glass-card" data-aos="fade-up">
+    <div class="table-responsive">
+      <table class="table mb-0" style="color: #cbd5e1">
+        <thead>
+          <tr style="border-color: rgba(255, 255, 255, 0.08)">
+            <th style="color: #94a3b8; padding: 1rem">Utilisateur</th>
+            <th style="color: #94a3b8">Email</th>
+            <th style="color: #94a3b8">Statut</th>
+            <th style="color: #94a3b8">Points</th>
+            <th style="color: #94a3b8">Blacklist</th>
+            <th style="color: #94a3b8">Inscription</th>
+            <th style="color: #94a3b8">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          {# ✅ Afficher uniquement les utilisateurs normaux (exclure admins et bibliothecaires) #}
+          {% if not u.is_staff and u.status != "bibliothecaire" %}
+          <tr style="border-color: rgba(255, 255, 255, 0.05)">
+            <td style="padding: 1rem">
+              <div class="d-flex align-items-center gap-3">
+                <div class="user-avatar" style="width: 36px; height: 36px; font-size: 0.85rem">
+                  {{ u.first_name|first|upper }}{{ u.last_name|first|upper }}
+                </div>
+                <div>
+                  <div style="color: #e2e8f0; font-weight: 500">{{ u.first_name }} {{ u.last_name }}</div>
+                  <div style="color: #64748b; font-size: 0.8rem">@{{ u.username }}</div>
+                </div>
+              </div>
+            </td>
+            <td style="color: #94a3b8; font-size: 0.9rem">{{ u.email }}</td>
+            <td>
+              <span style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; padding: 0.3rem 0.8rem; border-radius: 50px; font-size: 0.8rem;">
+                {{ u.get_status_display }}
+              </span>
+            </td>
+            <td style="color: #fbbf24; font-weight: 600">
+              <i class="bi bi-star-fill me-1" style="font-size: 0.75rem"></i>{{ u.points_fidelite }}
+            </td>
+            <td>
+              {% if u.est_blackliste %}
+              <span style="color: #f87171"><i class="bi bi-slash-circle-fill me-1"></i>Oui</span>
+              {% else %}
+              <span style="color: #34d399"><i class="bi bi-check-circle-fill me-1"></i>Non</span>
+              {% endif %}
+            </td>
+            <td style="color: #64748b; font-size: 0.85rem">{{ u.date_inscription|date:"d/m/Y" }}</td>
+            <td>
+              <div class="d-flex gap-2">
+                <a href="{% url 'users:user_detail' u.pk %}" class="btn btn-glow" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Voir détails">
+                  <i class="bi bi-eye"></i>
+                </a>
+                {% if not u.is_staff %}
+                  {% if u.est_blackliste %}
+                    <a href="{% url 'dashboard:admin_toggle_blacklist' u.pk %}" class="btn btn-success-glow" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Retirer de la blacklist" onclick="return confirm('Retirer {{ u.username }} de la blacklist ?')">
+                      <i class="bi bi-check-circle"></i>
+                    </a>
+                  {% else %}
+                    <a href="{% url 'dashboard:admin_toggle_blacklist' u.pk %}" class="btn btn-danger-glow" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Blacklister" onclick="return confirm('Blacklister {{ u.username }} ?')">
+                      <i class="bi bi-slash-circle"></i>
+                    </a>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endif %}
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5" style="color: #64748b">
+              Aucun utilisateur (étudiant, enseignant, employeur ou personne normale).
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

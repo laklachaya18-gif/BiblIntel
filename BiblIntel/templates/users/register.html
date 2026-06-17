@@ -1,0 +1,384 @@
+{% extends 'base.html' %} 
+{% block title %}Inscription - BiblIntel{% endblock %}
+{% block content %}
+<style>
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 18px;
+  user-select: none;
+  color: #64748b;
+}
+
+.toggle-password:hover {
+  color: var(--primary);
+}
+
+/* Style pour les nouveaux champs conditionnels */
+.conditional-field {
+  transition: all 0.3s ease;
+}
+</style>
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="form-premium position-relative" data-aos="zoom-in">
+        <div
+          class="position-absolute"
+          style="
+            top: -30px;
+            left: -30px;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(
+              135deg,
+              var(--primary),
+              var(--secondary)
+            );
+            border-radius: 50%;
+            opacity: 0.2;
+            filter: blur(30px);
+          "
+        ></div>
+        <div
+          class="position-absolute"
+          style="
+            bottom: -30px;
+            right: -30px;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(
+              135deg,
+              var(--accent),
+              var(--secondary)
+            );
+            border-radius: 50%;
+            opacity: 0.2;
+            filter: blur(30px);
+          "
+        ></div>
+
+        <div class="text-center mb-4">
+          <div
+            class="d-inline-flex align-items-center justify-content-center mb-3"
+            style="
+              width: 70px;
+              height: 70px;
+              background: linear-gradient(
+                135deg,
+                var(--primary),
+                var(--secondary)
+              );
+              border-radius: 20px;
+              box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4);
+            "
+          >
+            <i class="bi bi-person-plus fs-2 text-white"></i>
+          </div>
+          <h2
+            class="fw-bold"
+            style="
+              background: linear-gradient(135deg, #fff, #a5b4fc);
+              background-clip: text;
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+            "
+          >
+            Créer un compte
+          </h2>
+          <p style="color: #64748b">Rejoignez la communauté BiblIntel</p>
+        </div>
+
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+
+          <div class="row g-3">
+
+            <!-- USERNAME -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Nom d'utilisateur *</label>
+              <input type="text" name="username"
+                     class="form-control form-control-premium {% if form.username.errors %}is-invalid{% endif %}"
+                     required>
+              <small class="text-danger">{{ form.username.errors }}</small>
+            </div>
+
+            <!-- EMAIL -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Email *</label>
+              <input type="email" name="email"
+                     class="form-control form-control-premium {% if form.email.errors %}is-invalid{% endif %}"
+                     required>
+              <small class="text-danger">{{ form.email.errors }}</small>
+            </div>
+
+            <!-- FIRST NAME -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Prénom *</label>
+              <input type="text" name="first_name"
+                     class="form-control form-control-premium {% if form.first_name.errors %}is-invalid{% endif %}"
+                     required>
+              <small class="text-danger">{{ form.first_name.errors }}</small>
+            </div>
+
+            <!-- LAST NAME -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Nom *</label>
+              <input type="text" name="last_name"
+                     class="form-control form-control-premium {% if form.last_name.errors %}is-invalid{% endif %}"
+                     required>
+              <small class="text-danger">{{ form.last_name.errors }}</small>
+            </div>
+
+            <!-- PASSWORD 1 -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Mot de passe *</label>
+              <div style="position: relative;">
+                <input
+                  type="password"
+                  name="password1"
+                  id="password1"
+                  class="form-control form-control-premium"
+                  required
+                >
+                <span
+                  onclick="togglePassword('password1', this)"
+                  style="
+                    position:absolute;
+                    right:15px;
+                    top:50%;
+                    transform:translateY(-50%);
+                    cursor:pointer;
+                    font-size:20px;
+                  "
+                >
+                  👁
+                </span>
+              </div>
+              <small id="strengthText"></small>
+              <small class="text-danger">{{ form.password1.errors }}</small>
+            </div>
+
+            <!-- PASSWORD 2 -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Confirmer mot de passe *</label>
+              <div style="position: relative;">
+                <input
+                  type="password"
+                  name="password2"
+                  id="password2"
+                  class="form-control form-control-premium"
+                  required
+                >
+                <span
+                  onclick="togglePassword('password2', this)"
+                  style="
+                    position:absolute;
+                    right:15px;
+                    top:50%;
+                    transform:translateY(-50%);
+                    cursor:pointer;
+                    font-size:20px;
+                  "
+                >
+                  👁
+                </span>
+              </div>
+              <small id="matchText"></small>
+              <small class="text-danger">{{ form.password2.errors }}</small>
+            </div>
+
+            <!-- STATUS (avec nouveaux rôles) -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Statut *</label>
+              <select name="status" id="statusSelect" class="form-control form-control-premium" required onchange="toggleRoleFields()">
+                <option value="etudiant">Étudiant</option>
+                <option value="enseignant">Enseignant</option>
+                <option value="bibliothecaire">Bibliothécaire</option>
+                <option value="employeur">Employeur</option>
+                <option value="personne">Personne normale</option>
+              </select>
+            </div>
+
+            <!-- ===== CHAMPS CONDITIONNELS ===== -->
+
+            <!-- RIB (pour bibliothécaire) -->
+            <div id="rib_field" class="col-md-6 conditional-field" style="display: none;">
+              <label class="form-label-premium">RIB *</label>
+              <input type="text" name="rib" class="form-control form-control-premium" placeholder="FR76 1234 5678 9012 3456 7890 123">
+              <small class="text-muted">Relevé d'identité bancaire pour les virements de salaire</small>
+            </div>
+
+            <!-- Domaine professionnel (pour employeur) -->
+            <div id="domaine_field" class="col-md-6 conditional-field" style="display: none;">
+              <label class="form-label-premium">Domaine professionnel *</label>
+              <input type="text" name="domaine_professionnel" class="form-control form-control-premium" placeholder="Ex: Finance, Santé, Industrie, Éducation...">
+              <small class="text-muted">Votre domaine d'activité professionnelle</small>
+            </div>
+
+            <!-- Matière enseignée (pour enseignant) -->
+            <div id="matiere_field" class="col-md-6 conditional-field" style="display: none;">
+              <label class="form-label-premium">Matière enseignée *</label>
+              <input type="text" name="matiere_enseignee" class="form-control form-control-premium" placeholder="Ex: Mathématiques, Physique, Informatique...">
+              <small class="text-muted">La matière que vous enseignez</small>
+            </div>
+
+            <!-- FILIERE (pour étudiant) -->
+            <div id="filiere_field" class="col-md-6 conditional-field" style="display: none;">
+              <label class="form-label-premium">Filière</label>
+              <input type="text" name="filiere" class="form-control form-control-premium" placeholder="Ex: 4IIR, IASD, Génie Civil...">
+              <small class="text-muted">Votre filière d'étude</small>
+            </div>
+
+            <!-- TELEPHONE -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Téléphone</label>
+              <input type="text" name="telephone" class="form-control form-control-premium" placeholder="06 12 34 56 78">
+            </div>
+
+            <!-- DATE -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Date de naissance</label>
+              <input type="date" name="date_naissance" class="form-control form-control-premium">
+            </div>
+
+            <!-- PHOTO -->
+            <div class="col-12">
+              <label class="form-label-premium">Photo de profil</label>
+              <input type="file" name="photo_profil" class="form-control form-control-premium" accept="image/*">
+            </div>
+
+          </div>
+
+          <!-- CATÉGORIES PRÉFÉRÉES (pour tous sauf bibliothécaire et admin) -->
+          <div id="categoriesSection" class="col-12 mt-3" style="display: block;">
+            <label class="form-label-premium">
+              Catégories préférées <small style="color:#64748b">(livres que vous aimez lire — apparaîtront en priorité)</small>
+            </label>
+            <div class="glass-card">
+              {{ form.categories_preferees }}
+            </div>
+          </div>
+
+          <!-- BUTTON -->
+          <div class="mt-4">
+            <button type="submit" class="btn btn-glow w-100 py-3">
+              <i class="bi bi-person-plus me-2"></i>S'inscrire
+            </button>
+          </div>
+        </form>
+
+        <div class="text-center mt-4">
+          <p style="color: #64748b">
+            Déjà un compte ?
+            <a
+              href="{% url 'users:login' %}"
+              style="
+                color: var(--primary);
+                text-decoration: none;
+                font-weight: 600;
+              "
+              >Se connecter</a
+            >
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const p1 = document.getElementById("password1");
+const p2 = document.getElementById("password2");
+const strengthText = document.getElementById("strengthText");
+const matchText = document.getElementById("matchText");
+
+// Force password
+p1.addEventListener("input", function () {
+    let v = p1.value;
+    let score = 0;
+
+    if (v.length >= 8) score++;
+    if (/[A-Z]/.test(v)) score++;
+    if (/[0-9]/.test(v)) score++;
+    if (/[^A-Za-z0-9]/.test(v)) score++;
+
+    if (score <= 1) {
+        strengthText.textContent = "Mot de passe faible 🔴";
+        strengthText.style.color = "red";
+    } else if (score === 2 || score === 3) {
+        strengthText.textContent = "Mot de passe moyen 🟠";
+        strengthText.style.color = "orange";
+    } else {
+        strengthText.textContent = "Mot de passe fort 🟢";
+        strengthText.style.color = "green";
+    }
+});
+
+// Match password
+p2.addEventListener("input", function () {
+    if (p1.value !== p2.value) {
+        matchText.textContent = "❌ Les mots de passe ne correspondent pas";
+        matchText.style.color = "red";
+    } else {
+        matchText.textContent = "✔ OK";
+        matchText.style.color = "green";
+    }
+});
+
+function togglePassword(id, icon) {
+    const input = document.getElementById(id);
+    if (input.type === "password") {
+        input.type = "text";
+        icon.innerHTML = "🙈";
+    } else {
+        input.type = "password";
+        icon.innerHTML = "👁";
+    }
+}
+
+// ✅ NOUVELLE FONCTION pour gérer l'affichage des champs selon le rôle
+function toggleRoleFields() {
+    const status = document.getElementById("statusSelect").value;
+    
+    // Récupérer tous les champs conditionnels
+    const ribField = document.getElementById("rib_field");
+    const domaineField = document.getElementById("domaine_field");
+    const matiereField = document.getElementById("matiere_field");
+    const filiereField = document.getElementById("filiere_field");
+    const categoriesSection = document.getElementById("categoriesSection");
+    
+    // Cacher tous d'abord
+    if (ribField) ribField.style.display = "none";
+    if (domaineField) domaineField.style.display = "none";
+    if (matiereField) matiereField.style.display = "none";
+    if (filiereField) filiereField.style.display = "none";
+    if (categoriesSection) categoriesSection.style.display = "block";
+    
+    // Afficher selon le rôle
+    if (status === "bibliothecaire") {
+        if (ribField) ribField.style.display = "block";
+        if (categoriesSection) categoriesSection.style.display = "none";
+    } 
+    else if (status === "employeur") {
+        if (domaineField) domaineField.style.display = "block";
+    } 
+    else if (status === "enseignant") {
+        if (matiereField) matiereField.style.display = "block";
+    }
+    else if (status === "etudiant") {
+        if (filiereField) filiereField.style.display = "block";
+    }
+    // Personne normale : aucun champ supplémentaire
+}
+
+// Appel initial au chargement
+document.addEventListener("DOMContentLoaded", function() {
+    toggleRoleFields();
+});
+</script>
+{% endblock %}

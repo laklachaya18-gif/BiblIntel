@@ -1,0 +1,412 @@
+{% extends 'base.html' %} 
+{% block title %}{{ titre }} - BiblIntel{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="form-premium position-relative" data-aos="zoom-in">
+        <!-- Decorative elements -->
+        <div
+          class="position-absolute"
+          style="
+            top: -30px;
+            left: -30px;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(
+              135deg,
+              var(--primary),
+              var(--secondary)
+            );
+            border-radius: 50%;
+            opacity: 0.2;
+            filter: blur(30px);
+          "
+        ></div>
+        <div
+          class="position-absolute"
+          style="
+            bottom: -30px;
+            right: -30px;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(
+              135deg,
+              var(--accent),
+              var(--secondary)
+            );
+            border-radius: 50%;
+            opacity: 0.2;
+            filter: blur(30px);
+          "
+        ></div>
+
+        <div class="text-center mb-4">
+          <div
+            class="d-inline-flex align-items-center justify-content-center mb-3"
+            style="
+              width: 70px;
+              height: 70px;
+              background: linear-gradient(
+                135deg,
+                var(--primary),
+                var(--secondary)
+              );
+              border-radius: 20px;
+              box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4);
+            "
+          >
+            <i class="bi bi-book fs-2 text-white"></i>
+          </div>
+          <h2
+            class="fw-bold"
+            style="
+              background: linear-gradient(135deg, #fff, #a5b4fc);
+              background-clip: text;
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+            "
+          >
+            {{ titre }}
+          </h2>
+        </div>
+
+        <!-- Erreurs générales du formulaire -->
+        {% if form.non_field_errors %}
+        <div
+          class="alert alert-danger mb-4"
+          style="
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+            border-radius: 16px;
+          "
+        >
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label-premium"
+                >Titre <span style="color: var(--danger)">*</span></label
+              >
+              <input
+                type="text"
+                name="titre"
+                class="form-control form-control-premium {% if form.titre.errors %}is-invalid{% endif %}"
+                value="{{ form.titre.value|default:'' }}"
+                required
+              />
+              {% if form.titre.errors %}
+              <div
+                class="invalid-feedback d-block"
+                style="color: #f87171; font-size: 0.875rem; margin-top: 0.5rem"
+              >
+                <i class="bi bi-exclamation-circle me-1"></i>{{form.titre.errors|striptags }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-premium"
+                >Auteur <span style="color: var(--danger)">*</span></label
+              >
+              <input
+                type="text"
+                name="auteur"
+                class="form-control form-control-premium {% if form.auteur.errors %}is-invalid{% endif %}"
+                value="{{ form.auteur.value|default:'' }}"
+                required
+              />
+              {% if form.auteur.errors %}
+              <div
+                class="invalid-feedback d-block"
+                style="color: #f87171; font-size: 0.875rem; margin-top: 0.5rem"
+              >
+                <i class="bi bi-exclamation-circle me-1"></i>{{form.auteur.errors|striptags }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-12">
+              <label class="form-label-premium"
+                >Résumé <span style="color: var(--danger)">*</span></label
+              >
+              <textarea
+                name="resume"
+                class="form-control form-control-premium {% if form.resume.errors %}is-invalid{% endif %}"
+                rows="4"
+                required
+              >
+{{ form.resume.value|default:'' }}</textarea
+              >
+              {% if form.resume.errors %}
+              <div
+                class="invalid-feedback d-block"
+                style="color: #f87171; font-size: 0.875rem; margin-top: 0.5rem"
+              >
+                <i class="bi bi-exclamation-circle me-1"></i>{{form.resume.errors|striptags }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-premium">Catégories</label>
+              <div
+                style="
+                  background: #1e293b;
+                  border: 1px solid #334155;
+                  border-radius: 12px;
+                  padding: 1rem;
+                  max-height: 180px;
+                  overflow-y: auto;
+                "
+              >
+                {% for cat in form.categories %}
+                <div class="form-check mb-1">
+                  {{ cat.tag }}
+                  <label
+                    class="form-check-label"
+                    style="color: #e2e8f0; cursor: pointer"
+                    for="{{ cat.id_for_label }}"
+                  >
+                    {{ cat.choice_label }}
+                  </label>
+                </div>
+                {% endfor %}
+              </div>
+              {% if form.categories.errors %}
+              <div
+                style="color: #f87171; font-size: 0.875rem; margin-top: 0.5rem"
+              >
+                <i class="bi bi-exclamation-circle me-1"></i>{{form.categories.errors|striptags }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-premium">Filière cible</label>
+              <input
+                type="text"
+                name="filiere_cible"
+                class="form-control form-control-premium {% if form.filiere_cible.errors %}is-invalid{% endif %}"
+                value="{{ form.filiere_cible.value|default:'' }}"
+              />
+              {% if form.filiere_cible.errors %}
+              <div
+                class="invalid-feedback d-block"
+                style="color: #f87171; font-size: 0.875rem; margin-top: 0.5rem"
+              >
+                <i class="bi bi-exclamation-circle me-1"></i>{{form.filiere_cible.errors|striptags }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="mb-3">
+    <label class="form-label-premium">🎵 Musique d'ambiance (optionnel)</label>
+    <input type="file" name="musique_ambiance" class="form-control form-control-premium" accept="audio/*">
+    <small class="text-muted">Format MP3 recommandé. Laissez vide pour la musique par défaut.</small>
+</div>
+            <div class="col-md-6">
+              <label class="form-label-premium">Fichier PDF</label>
+              <input
+                type="file"
+                name="fichier_pdf"
+                class="form-control form-control-premium {% if form.fichier_pdf.errors %}is-invalid{% endif %}"
+                accept=".pdf"
+              />
+              {% if form.fichier_pdf.errors %}
+              <div
+                class="invalid-feedback d-block"
+                style="color: #f87171; font-size: 0.875rem; margin-top: 0.5rem"
+              >
+                <i class="bi bi-exclamation-circle me-1"></i>{{form.fichier_pdf.errors|striptags }}
+              </div>
+              {% endif %} {% if form.instance.fichier_pdf %}
+              <small style="color: #64748b"
+                ><i class="bi bi-file-earmark me-1"></i>Fichier actuel : {{form.instance.fichier_pdf.name }}</small
+              >
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-premium">Couverture</label>
+              <input
+                type="file"
+                name="couverture"
+                class="form-control form-control-premium {% if form.couverture.errors %}is-invalid{% endif %}"
+                accept="image/*"
+              />
+              {% if form.couverture.errors %}
+              <div
+                class="invalid-feedback d-block"
+                style="color: #f87171; font-size: 0.875rem; margin-top: 0.5rem"
+              >
+                <i class="bi bi-exclamation-circle me-1"></i>{{form.couverture.errors|striptags }}
+              </div>
+              {% endif %} {% if form.instance.couverture %}
+              <small style="color: #64748b"
+                ><i class="bi bi-image me-1"></i>Image actuelle : {{form.instance.couverture.name }}</small
+              >
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-premium"
+                >Tags (séparés par des virgules)</label
+              >
+              <input
+                type="text"
+                name="tags"
+                class="form-control form-control-premium {% if form.tags.errors %}is-invalid{% endif %}"
+                value="{{ form.tags.value|default:'' }}"
+                placeholder="python, django, web"
+              />
+              {% if form.tags.errors %}
+              <div
+                class="invalid-feedback d-block"
+                style="color: #f87171; font-size: 0.875rem; margin-top: 0.5rem"
+              >
+                <i class="bi bi-exclamation-circle me-1"></i>{{form.tags.errors|striptags }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label-premium">Nombre de pages</label>
+              <input
+                type="number"
+                name="nombre_pages"
+                class="form-control form-control-premium {% if form.nombre_pages.errors %}is-invalid{% endif %}"
+                value="{{ form.nombre_pages.value|default:0 }}"
+              />
+              {% if form.nombre_pages.errors %}
+              <div
+                class="invalid-feedback d-block"
+                style="color: #f87171; font-size: 0.875rem; margin-top: 0.5rem"
+              >
+                <i class="bi bi-exclamation-circle me-1"></i>{{form.nombre_pages.errors|striptags }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label-premium">Langue</label>
+              <input
+                type="text"
+                name="langue"
+                class="form-control form-control-premium {% if form.langue.errors %}is-invalid{% endif %}"
+                value="{{ form.langue.value|default:'Français' }}"
+              />
+              {% if form.langue.errors %}
+              <div
+                class="invalid-feedback d-block"
+                style="color: #f87171; font-size: 0.875rem; margin-top: 0.5rem"
+              >
+                <i class="bi bi-exclamation-circle me-1"></i>{{form.langue.errors|striptags }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-premium">Statut</label>
+              <select
+                name="statut"
+                class="form-control form-control-premium {% if form.statut.errors %}is-invalid{% endif %}"
+              >
+                <option
+                  value="disponible"
+                  {%
+                  if
+                  form.statut.value=""
+                  ="disponible"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Disponible
+                </option>
+                <option
+                  value="emprunte"
+                  {%
+                  if
+                  form.statut.value=""
+                  ="emprunte"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Emprunté
+                </option>
+                <option
+                  value="reserve"
+                  {%
+                  if
+                  form.statut.value=""
+                  ="reserve"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Réservé
+                </option>
+                <option
+                  value="archive"
+                  {%
+                  if
+                  form.statut.value=""
+                  ="archive"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Archivé
+                </option>
+              </select>
+              {% if form.statut.errors %}
+              <div
+                class="invalid-feedback d-block"
+                style="color: #f87171; font-size: 0.875rem; margin-top: 0.5rem"
+              >
+                <i class="bi bi-exclamation-circle me-1"></i>{{form.statut.errors|striptags }}
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- MAX EMPRUNTS SIMULTANÉS — OBLIGATOIRE -->
+            <div class="col-md-6">
+              <label class="form-label-premium">
+                Nb max d'emprunts simultanés <span style="color:var(--danger)">*</span>
+              </label>
+              <input
+                type="number"
+                name="max_emprunts_simultanes"
+                min="1"
+                class="form-control form-control-premium {% if form.max_emprunts_simultanes.errors %}is-invalid{% endif %}"
+                value="{{ form.max_emprunts_simultanes.value|default:1 }}"
+                required
+              />
+              <small style="color:#64748b">
+                <i class="bi bi-info-circle me-1"></i>Combien de personnes peuvent emprunter ce livre en même temps. Les suivantes entrent en file FIFO.
+              </small>
+              {% if form.max_emprunts_simultanes.errors %}
+              <div style="color:#f87171;font-size:0.875rem;margin-top:0.5rem">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ form.max_emprunts_simultanes.errors|striptags }}
+              </div>
+              {% endif %}
+            </div>
+
+          </div>
+
+          <div class="d-flex gap-3 mt-4">
+            <button type="submit" class="btn btn-success-glow">
+              <i class="bi bi-check-lg me-2"></i>Enregistrer
+            </button>
+            <a
+              href="{% url 'books:livre_list' %}"
+              class="btn btn-glow"
+              style="background: linear-gradient(135deg, #64748b, #94a3b8)"
+            >
+              <i class="bi bi-x-lg me-2"></i>Annuler
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

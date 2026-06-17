@@ -1,0 +1,519 @@
+{% extends 'base.html' %}
+{% block title %}{{ livre.titre }} — BiblIntel{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="glass-card" data-aos="fade-up">
+    <div class="row g-5">
+      <!-- Couverture -->
+      <div class="col-lg-4">
+        {% if livre.couverture %}
+        <img
+          src="{{ livre.couverture.url }}"
+          class="w-100"
+          style="
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.3);
+          "
+          alt="{{ livre.titre }}"
+        />
+        {% else %}
+        <div
+          class="w-100 d-flex align-items-center justify-content-center"
+          style="
+            aspect-ratio: 2/3;
+            border-radius: 20px;
+            background: linear-gradient(
+              135deg,
+              var(--primary),
+              var(--secondary)
+            );
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.3);
+          "
+        >
+          <i class="bi bi-book fs-1 text-white opacity-50"></i>
+        </div>
+        {% endif %}
+
+        <!-- Date retour prévue -->
+        {% if prochain_retour and livre.statut != 'disponible' %}
+        <div
+          class="mt-3 p-3"
+          style="
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 14px;
+          "
+        >
+          <div
+            style="
+              color: #fbbf24;
+              font-size: 0.82rem;
+              font-weight: 600;
+              margin-bottom: 0.25rem;
+            "
+          >
+            <i class="bi bi-calendar-check me-2"></i>Prochain retour prévu
+          </div>
+          <div style="color: #e2e8f0; font-weight: 700">
+            {{ prochain_retour.date_retour_prevue|date:"d/m/Y" }}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- File d'attente -->
+        {% if file_attente %}
+        <div
+          class="mt-3 p-3"
+          style="
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 14px;
+          "
+        >
+          <div
+            style="
+              color: #a5b4fc;
+              font-size: 0.82rem;
+              font-weight: 600;
+              margin-bottom: 0.5rem;
+            "
+          >
+            <i class="bi bi-people me-2"></i>File d'attente ({{file_attente|length }} personne{{ file_attente|length|pluralize }})
+          </div>
+          {% for res in file_attente %}
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span
+              style="
+                background: rgba(99, 102, 241, 0.3);
+                color: #a5b4fc;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.7rem;
+                font-weight: 700;
+              "
+              >{{ res.position_file }}</span
+            >
+            <span style="color: #94a3b8; font-size: 0.82rem"
+              >{{ res.utilisateur.first_name }} {{ res.utilisateur.last_name}}</span
+            >
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Détails -->
+      <div class="col-lg-8">
+        <div
+          class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2"
+        >
+          <div>
+            <h1
+              class="fw-bold mb-2"
+              style="
+                background: linear-gradient(135deg, #fff, #a5b4fc);
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+              "
+            >
+              {{ livre.titre }}
+            </h1>
+            <p class="lead mb-0" style="color: #94a3b8">
+              <i class="bi bi-person me-2"></i>par {{ livre.auteur }}
+            </p>
+          </div>
+          <span class="book-status-premium status-{{ livre.statut }}"
+            >{{ livre.get_statut_display }}</span
+          >
+        </div>
+
+        <!-- Badges métadonnées -->
+        <div class="d-flex flex-wrap gap-2 mb-4">
+          <span
+            class="badge"
+            style="
+              background: rgba(99, 102, 241, 0.15);
+              color: #a5b4fc;
+              padding: 0.5rem 1rem;
+              border-radius: 50px;
+            "
+          >
+            <i class="bi bi-file-earmark me-1"></i>{{ livre.nombre_pages }}
+            pages
+          </span>
+          <span
+            class="badge"
+            style="
+              background: rgba(236, 72, 153, 0.15);
+              color: #f9a8d4;
+              padding: 0.5rem 1rem;
+              border-radius: 50px;
+            "
+          >
+            <i class="bi bi-globe me-1"></i>{{ livre.langue }}
+          </span>
+          <span
+            class="badge"
+            style="
+              background: rgba(245, 158, 11, 0.15);
+              color: #fbbf24;
+              padding: 0.5rem 1rem;
+              border-radius: 50px;
+            "
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title="⭐ Note moyenne basée sur les avis des lecteurs"
+          >
+            <i class="bi bi-star-fill me-1"></i>{{ livre.note_moyenne }}/5
+          </span>
+          <span
+            class="badge"
+            style="
+              background: rgba(16, 185, 129, 0.15);
+              color: #34d399;
+              padding: 0.5rem 1rem;
+              border-radius: 50px;
+            "
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title="📊 Nombre total d'emprunts de ce livre"
+          >
+            <i class="bi bi-journal-arrow-down me-1"></i>{{livre.nombre_emprunts }} emprunts
+          </span>
+          {% if livre.date_ajout %}
+          <span
+            class="badge"
+            style="
+              background: rgba(100, 116, 139, 0.15);
+              color: #94a3b8;
+              padding: 0.5rem 1rem;
+              border-radius: 50px;
+            "
+          >
+            <i class="bi bi-calendar me-1"></i>{{ livre.date_ajout|date:"d/m/Y"}}
+          </span>
+          {% endif %}
+          {% if livre.filiere_cible %}
+          <span
+            class="badge"
+            style="
+              background: rgba(99, 102, 241, 0.15);
+              color: #a5b4fc;
+              padding: 0.5rem 1rem;
+              border-radius: 50px;
+            "
+          >
+            <i class="bi bi-mortarboard me-1"></i>{{ livre.filiere_cible }}
+          </span>
+          {% endif %}
+        </div>
+
+        <!-- Catégorie -->
+        {% if livre.categorie %}
+        <div class="mb-3">
+          <span
+            style="
+              color: #64748b;
+              font-size: 0.85rem;
+              text-transform: uppercase;
+              letter-spacing: 0.06em;
+            "
+            >Catégorie :
+          </span>
+          <span style="color: #a5b4fc; font-weight: 600"
+            >{{ livre.categorie.nom }}</span
+          >
+          {% if livre.categorie.parent %}
+          <span style="color: #64748b">  {{ livre.categorie.parent.nom }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <p style="color: #cbd5e1; line-height: 1.8; font-size: 1.05rem">
+          {{ livre.resume }}
+        </p>
+
+        <!-- Tags -->
+        {% if livre.tags %}
+        <div class="mb-4">
+          {% for tag in livre.tags.split %}
+          <span
+            style="
+              background: linear-gradient(
+                135deg,
+                var(--primary),
+                var(--secondary)
+              );
+              color: white;
+              padding: 0.3rem 0.9rem;
+              border-radius: 50px;
+              font-size: 0.82rem;
+              margin-right: 0.4rem;
+              margin-bottom: 0.4rem;
+              display: inline-block;
+            "
+            >{{ tag }}</span
+          >
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Boutons d'action -->
+        <div class="d-flex flex-wrap gap-3 mt-4">
+          
+          {# ── ADMIN : peut tout faire sur tous les livres ── #}
+          {% if user.is_staff %}
+            <a href="{% url 'books:livre_read' livre.pk %}" class="btn btn-glow">
+              <i class="bi bi-eye me-2"></i>Lire
+            </a>
+            <a href="{% url 'books:livre_update' livre.pk %}" class="btn btn-glow" style="background: linear-gradient(135deg, #64748b, #94a3b8)">
+              <i class="bi bi-pencil me-2"></i>Modifier
+            </a>
+            <a href="{% url 'books:livre_delete' livre.pk %}" class="btn btn-danger-glow" onclick="return confirm('Supprimer ce livre ?')">
+              <i class="bi bi-trash me-2"></i>Supprimer
+            </a>
+          
+          {# ── BIBLIOTHÉCAIRE : peut modifier/supprimer uniquement SES livres ── #}
+          {% elif user.status == "bibliothecaire" %}
+            <a href="{% url 'books:livre_read' livre.pk %}" class="btn btn-glow">
+              <i class="bi bi-eye me-2"></i>Lire
+            </a>
+            {% if livre.bibliothecaire == user %}
+              <a href="{% url 'books:livre_update' livre.pk %}" class="btn btn-glow" style="background: linear-gradient(135deg, #64748b, #94a3b8)">
+                <i class="bi bi-pencil me-2"></i>Modifier
+              </a>
+              <a href="{% url 'books:livre_delete' livre.pk %}" class="btn btn-danger-glow" onclick="return confirm('Supprimer ce livre ?')">
+                <i class="bi bi-trash me-2"></i>Supprimer
+              </a>
+            {% endif %}
+          
+          {# ── UTILISATEUR CONNECTÉ NORMAL : emprunter ou réserver et lire ── #}
+          {% elif user.is_authenticated %}
+            {% if livre.statut == 'disponible' %}
+              <a href="{% url 'borrowings:emprunt_create' livre.pk %}" class="btn btn-glow btn-success-glow">
+                <i class="bi bi-journal-arrow-down me-2"></i>Emprunter
+              </a>
+            {% else %}
+              <a href="{% url 'borrowings:reservation_create' livre.pk %}" class="btn btn-glow" style="background: linear-gradient(135deg, var(--accent), #fbbf24)">
+                <i class="bi bi-bookmark me-2"></i>Réserver
+              </a>
+            {% endif %}
+            <a href="{% url 'books:livre_read' livre.pk %}" class="btn btn-glow">
+              <i class="bi bi-eye me-2"></i>Lire
+            </a>
+          
+          {# ── VISITEUR NON CONNECTÉ : invitation à se connecter ── #}
+          {% else %}
+            <div class="alert alert-info" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 16px;">
+              <i class="bi bi-info-circle me-2"></i>
+              Pour emprunter ou réserver ce livre, <a href="{% url 'users:login' %}" style="color: #a5b4fc;">connectez-vous</a> ou <a href="{% url 'users:register' %}" style="color: #a5b4fc;">inscrivez-vous</a>.
+            </div>
+            <a href="{% url 'books:livre_read' livre.pk %}" class="btn btn-glow">
+              <i class="bi bi-eye me-2"></i>Lire
+            </a>
+          {% endif %}
+          
+        </div>
+
+        <!-- Petit rappel sur les points de fidélité -->
+        {% if user.is_authenticated and not user.is_staff and user.status != "bibliothecaire" %}
+        <div class="mt-3 p-2" style="background: rgba(99, 102, 241, 0.05); border-radius: 12px; font-size: 0.7rem;">
+          <i class="bi bi-star-fill me-1" style="color: #fbbf24;"></i>
+          <span class="text-muted">💡 Après emprunt : retour à temps (après 25j) = +10 à +30 pts + bonus avis +20 pts. Retard = 0 pt.</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Avis et commentaires -->
+  <div class="glass-card mt-4" data-aos="fade-up" data-aos-delay="100">
+    <h4
+      class="fw-bold mb-4"
+      style="
+        background: linear-gradient(135deg, #fff, #a5b4fc);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      "
+    >
+      <i class="bi bi-chat-square-text me-2"></i>Avis & commentaires
+    </h4>
+
+    {% if user_avis %}
+    <div
+      class="p-4 mb-4"
+      style="
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 16px;
+      "
+    >
+      <div class="d-flex align-items-center gap-3 mb-2">
+        <div
+          class="user-avatar"
+          style="width: 32px; height: 32px; font-size: 0.8rem"
+        >
+          {{ user.first_name|first }}{{ user.last_name|first }}
+        </div>
+        <strong style="color: #a5b4fc">Votre avis</strong>
+        <span class="text-warning">
+          {% for i in "12345" %}{% if forloop.counter <= user_avis.note %}<i
+            class="bi bi-star-fill"
+          ></i
+          >{% else %}<i class="bi bi-star"></i>{% endif %}{% endfor %}
+        </span>
+        {% if user_avis.note >= 4 %}
+<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-size: 0.65rem;">
+    <i class="bi bi-star-fill me-1"></i>⭐ +20 pts de fidélité pour vous (bonus avis)
+</span>
+{% endif %}
+      </div>
+      <p style="color: #cbd5e1; margin: 0">{{ user_avis.commentaire }}</p>
+    </div>
+    {% elif user.is_authenticated and not is_admin %}
+    <form
+      method="post"
+      class="mb-4 p-4"
+      style="
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+      "
+    >
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label-premium">Note</label>
+        <div class="d-flex gap-2">
+          {% for i in "12345" %}
+          <label style="cursor: pointer">
+            <input
+              type="radio"
+              name="note"
+              value="{{ i }}"
+              style="display: none"
+            />
+            <span
+              class="star-rating"
+              style="font-size: 2rem; color: #475569; transition: color 0.2s"
+              onmouseover="hoverStars(this)"
+              onmouseout="unhoverStars(this)"
+              onclick="selectStar(this)"
+              >★</span
+            >
+          </label>
+          {% endfor %}
+        </div>
+        <small class="text-muted" style="font-size: 0.7rem;">
+          ⭐ Si vous donnez une note ≥ 4/5, le bibliothécaire reçoit un bonus de 20 DH !
+        </small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label-premium">Commentaire</label>
+        <textarea
+          name="commentaire"
+          class="form-control form-control-premium"
+          rows="3"
+          placeholder="Partagez votre opinion sur ce livre..."
+        ></textarea>
+        <small class="text-muted" style="font-size: 0.7rem;">
+          💡 Laisser un avis vous donne un bonus de +20 points de fidélité (si retour à temps) !
+        </small>
+      </div>
+      <button type="submit" class="btn btn-glow">
+        <i class="bi bi-send me-2"></i>Publier mon avis
+      </button>
+    </form>
+    {% elif not user.is_authenticated %}
+    <div class="text-center p-4" style="background: rgba(99, 102, 241, 0.05); border-radius: 16px;">
+      <i class="bi bi-box-arrow-in-right fs-3" style="color: #a5b4fc;"></i>
+      <p class="mt-2">Connectez-vous pour laisser un avis !</p>
+      <a href="{% url 'users:login' %}" class="btn btn-glow btn-sm">Se connecter</a>
+    </div>
+    {% endif %} 
+    
+    {% for avis in avis_list %}
+    <div class="p-4 mb-3" style="border-bottom: 1px solid var(--glass-border)">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div class="d-flex align-items-center gap-3">
+          <div
+            class="user-avatar"
+            style="width: 36px; height: 36px; font-size: 0.9rem"
+          >
+            {{ avis.utilisateur.first_name|first }}{{avis.utilisateur.last_name|first }}
+          </div>
+          <div>
+            <strong style="color: #e2e8f0">{{ avis.utilisateur.first_name }} {{ avis.utilisateur.last_name}}</strong>
+            <div style="color: #64748b; font-size: 0.78rem">
+              {{ avis.utilisateur.get_status_display }}
+            </div>
+          </div>
+        </div>
+        <div>
+          <span class="text-warning"
+            >{{ avis.note }} <i class="bi bi-star-fill"></i
+          ></span>
+          <div style="color: #64748b; font-size: 0.78rem; text-align: right">
+            {{ avis.date_creation|date:"d/m/Y" }}
+          </div>
+        </div>
+      </div>
+      <p style="color: #94a3b8; margin: 0">{{ avis.commentaire }}</p>
+    </div>
+    {% empty %}
+    <div class="text-center py-5">
+      <i
+        class="bi bi-chat-square display-1"
+        style="color: var(--primary); opacity: 0.3"
+      ></i>
+      <p class="mt-3" style="color: #64748b">
+        Aucun avis pour le moment. Soyez le premier !
+      </p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %} 
+
+{% block extra_js %}
+<script>
+  // Activer les tooltips Bootstrap
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+  })
+
+  function selectStar(el) {
+    document.querySelectorAll(".star-rating").forEach((s) => {
+      s.style.color = "#475569";
+    });
+    el.style.color = "#fbbf24";
+    let prev = el.parentElement.previousElementSibling;
+    while (prev) {
+      prev.querySelector(".star-rating").style.color = "#fbbf24";
+      prev = prev.previousElementSibling;
+    }
+  }
+  function hoverStars(el) {
+    el.style.color = "#fbbf24";
+    let prev = el.parentElement.previousElementSibling;
+    while (prev) {
+      prev.querySelector(".star-rating").style.color = "#fbbf24";
+      prev = prev.previousElementSibling;
+    }
+  }
+  function unhoverStars(el) {
+    const checked = document.querySelector('input[name="note"]:checked');
+    if (!checked) {
+      document.querySelectorAll(".star-rating").forEach((s) => {
+        s.style.color = "#475569";
+      });
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% block title %}Logs Système - BiblIntel{% endblock %}
+{% block extra_css %}
+<style>
+  .log-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 50px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    background: rgba(99, 102, 241, 0.1);
+    color: #a5b4fc;
+  }
+  .log-connexion {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+  }
+  .log-deconnexion {
+    background: rgba(100, 116, 139, 0.15);
+    color: #94a3b8;
+  }
+  .log-emprunt {
+    background: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+  }
+  .log-retour {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+  }
+  .log-blacklist {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+  }
+  .log-paiement {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+  }
+  .log-crud_livre {
+    background: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+  }
+  .log-crud_user {
+    background: rgba(236, 72, 153, 0.15);
+    color: #f9a8d4;
+  }
+  .log-reservation {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="container py-5">
+  <div
+    class="d-flex justify-content-between align-items-center mb-5"
+    data-aos="fade-down"
+  >
+    <div>
+      <h2
+        class="fw-bold mb-1"
+        style="
+          background: linear-gradient(135deg, #fff, #a5b4fc);
+          background-clip: text;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        "
+      >
+        <i class="bi bi-journal-text me-2"></i>Logs d'audit
+      </h2>
+      <p style="color: #64748b; margin: 0">
+        Traçabilité complète de toutes les actions importantes.
+      </p>
+    </div>
+    <a
+      href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}export=csv"
+      class="btn btn-glow"
+      style="background: linear-gradient(135deg, var(--success), #34d399)"
+    >
+      <i class="bi bi-download me-2"></i>Exporter CSV
+    </a>
+  </div>
+
+  <!-- Filtres -->
+  <div class="glass-card mb-4" data-aos="fade-up">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label-premium" style="font-size: 0.8rem">Type</label>
+        <div class="select-dark-wrapper">
+          <select name="type" class="form-control form-control-premium">
+            <option value="">Tous les types</option>
+            <option
+              value="connexion"
+              {% if request.GET.type_action == "connexion" %}selected{% endif %}
+            >
+              Connexion
+            </option>
+            <option
+              value="deconnexion"
+              {% if request.GET.type_action == "deconnexion" %}selected{% endif %}
+            >
+              Déconnexion
+            </option>
+            <option
+              value="crud_livre"
+              {% if request.GET.type_action == "crud_livre" %}selected{% endif %}
+            >
+              CRUD Livre
+            </option>
+            <option
+              value="crud_user"
+              {% if request.GET.type_action == "crud_user" %}selected{% endif %}
+            >
+              CRUD Utilisateur
+            </option>
+            <option
+              value="emprunt"
+              {% if request.GET.type_action == "emprunt" %}selected{% endif %}
+            >
+              Emprunt
+            </option>
+            <option
+              value="retour"
+              {% if request.GET.type_action == "retour" %}selected{% endif %}
+            >
+              Retour
+            </option>
+            <option
+              value="blacklist"
+              {% if request.GET.type_action == "blacklist" %}selected{% endif %}
+            >
+              Blacklist
+            </option>
+            <option
+              value="reservation"
+              {% if request.GET.type_action == "reservation" %}selected{% endif %}
+            >
+              Réservation
+            </option>
+            <option
+              value="paiement"
+              {% if request.GET.type_action == "paiement" %}selected{% endif %}
+            >
+              Paiement
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label-premium" style="font-size: 0.8rem"
+          >Date début</label
+        >
+        <input
+          type="date"
+          name="date_debut"
+          class="form-control form-control-premium"
+          value="{{ date_debut|default:'' }}"
+        />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label-premium" style="font-size: 0.8rem"
+          >Date fin</label
+        >
+        <input
+          type="date"
+          name="date_fin"
+          class="form-control form-control-premium"
+          value="{{ date_fin|default:'' }}"
+        />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label-premium" style="font-size: 0.8rem"
+          >Utilisateur</label
+        >
+        <input
+          type="text"
+          name="utilisateur"
+          class="form-control form-control-premium"
+          placeholder="Username..."
+          value="{{ utilisateur_filtre|default:'' }}"
+        />
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-glow w-100">
+          <i class="bi bi-funnel me-2"></i>Filtrer
+        </button>
+      </div>
+      <div class="col-md-1">
+        <a
+          href="{% url 'logs:log_list' %}"
+          class="btn w-100"
+          style="
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: #94a3b8;
+            border-radius: 16px;
+            padding: 0.875rem;
+          "
+        >
+          <i class="bi bi-x-lg"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <div class="glass-card" data-aos="fade-up" data-aos-delay="100">
+    <div class="table-responsive">
+      <table class="table mb-0" style="color: #cbd5e1">
+        <thead>
+          <tr style="border-color: rgba(255, 255, 255, 0.08)">
+            <th style="color: #94a3b8; padding: 1rem 1.25rem">Date</th>
+            <th style="color: #94a3b8">Type</th>
+            <th style="color: #94a3b8">Utilisateur</th>
+            <th style="color: #94a3b8">Description</th>
+            <th style="color: #94a3b8">IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr style="border-color: rgba(255, 255, 255, 0.05)">
+            <td
+              style="
+                color: #94a3b8;
+                padding: 1rem 1.25rem;
+                white-space: nowrap;
+                font-size: 0.85rem;
+              "
+            >
+              {{ log.date_action|date:"d/m/Y H:i:s" }}
+            </td>
+            <td>
+              <span class="log-badge log-{{ log.type_action }}">
+                {{ log.get_type_action_display }}
+              </span>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div
+                  class="user-avatar"
+                  style="width: 26px; height: 26px; font-size: 0.65rem"
+                >
+                  {{ log.utilisateur.username|first|upper|default:"S" }}
+                </div>
+                <span style="color: #e2e8f0; font-size: 0.9rem"
+                  >{{ log.utilisateur.username|default:"Système" }}</span
+                >
+              </div>
+            </td>
+            <td style="color: #94a3b8; font-size: 0.88rem">
+              {{ log.description }}
+            </td>
+            <td style="color: #64748b; font-size: 0.82rem">
+              {% if log.ip_adresse %}<i class="bi bi-hdd-network me-1"></i>{{log.ip_adresse }}{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-5" style="color: #64748b">
+              <i
+                class="bi bi-inbox display-1 d-block mb-3"
+                style="opacity: 0.3"
+              ></i>
+              Aucun log enregistré.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if logs %}
+    <div class="p-3 text-end" style="border-top: 1px solid var(--glass-border)">
+      <span style="color: #64748b; font-size: 0.85rem"
+        >{{ logs|length }} enregistrement(s)</span
+      >
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

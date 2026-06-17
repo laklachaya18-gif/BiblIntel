@@ -1,0 +1,303 @@
+{% extends 'base.html' %} 
+{% block title %}Détail Utilisateur - {{ user_detail.username }}- BiblIntel{% endblock %} 
+{% block content %}
+<div class="container py-5">
+  <!-- Header -->
+  <div
+    class="d-flex justify-content-between align-items-center mb-5"
+    data-aos="fade-down"
+  >
+    <div>
+      <h2
+        class="fw-bold mb-1"
+        style="
+          background: linear-gradient(135deg, #fff, #a5b4fc);
+          background-clip: text;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        "
+      >
+        <i class="bi bi-person-circle me-2"></i>Détail Utilisateur
+      </h2>
+      <p style="color: #64748b; margin: 0">
+        Informations complètes et historique de {{ user_detail.first_name }} {{ user_detail.last_name }}
+      </p>
+    </div>
+    <a
+      href="{% url 'users:user_list' %}"
+      class="btn btn-glow"
+      style="
+        background: linear-gradient(135deg, #475569, #64748b);
+        box-shadow: none;
+      "
+    >
+      <i class="bi bi-arrow-left me-2"></i>Retour
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <!-- Carte profil -->
+    <div class="col-lg-4" data-aos="fade-up">
+      <div class="glass-card h-100">
+        <!-- Avatar + Nom -->
+        <div class="text-center mb-4">
+          <div
+            class="user-avatar mx-auto mb-3 {% if user_detail.is_staff %}avatar-admin{% endif %}"
+            style="
+              width: 80px;
+              height: 80px;
+              font-size: 1.8rem;
+              border: 3px solid rgba(99, 102, 241, 0.4);
+            "
+          >
+            {{ user_detail.first_name|first|upper }}{{ user_detail.last_name|first|upper }}
+          </div>
+          <h4 class="fw-bold mb-1" style="color: #e2e8f0">
+            {{ user_detail.first_name }} {{ user_detail.last_name }}
+          </h4>
+          <p style="color: #64748b; margin: 0">@{{ user_detail.username }}</p>
+          <div class="mt-2">
+            <span
+              style="
+                background: rgba(99, 102, 241, 0.15);
+                color: #a5b4fc;
+                padding: 0.3rem 0.9rem;
+                border-radius: 50px;
+                font-size: 0.8rem;
+                font-weight: 600;
+              "
+            >
+              {% if user_detail.is_staff %}Admin{% else %}{{ user_detail.get_status_display }}{% endif %}
+            </span>
+          </div>
+        </div>
+
+        <hr style="border-color: var(--glass-border)" />
+
+        <!-- Infos -->
+        <div class="d-flex flex-column gap-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <span style="color: #64748b"><i class="bi bi-envelope me-2"></i>Email</span>
+            <span style="color: #e2e8f0; font-size: 0.9rem">{{ user_detail.email }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span style="color: #64748b"><i class="bi bi-calendar me-2"></i>Inscription</span>
+            <span style="color: #e2e8f0">{{ user_detail.date_inscription|date:"d/m/Y" }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span style="color: #64748b"><i class="bi bi-star-fill me-2" style="color: #fbbf24"></i>Points</span>
+            <span style="color: #fbbf24; font-weight: 700">{{ user_detail.points_fidelite }} pts</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span style="color: #64748b"><i class="bi bi-slash-circle me-2"></i>Blacklist</span>
+            {% if user_detail.est_blackliste %}
+            <span style="color: #f87171; font-weight: 600"><i class="bi bi-slash-circle-fill me-1"></i>Oui</span>
+            {% else %}
+            <span style="color: #34d399; font-weight: 600"><i class="bi bi-check-circle-fill me-1"></i>Non</span>
+            {% endif %}
+          </div>
+          {% if user_detail.filiere %}
+          <div class="d-flex justify-content-between align-items-center">
+            <span style="color: #64748b"><i class="bi bi-mortarboard me-2"></i>Filière</span>
+            <span style="color: #e2e8f0">{{ user_detail.filiere }}</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Action blacklist -->
+        {% if not user_detail.is_staff %}
+        <div class="mt-4">
+          <a
+            href="{% url 'dashboard:admin_toggle_blacklist' user_detail.pk %}"
+            class="btn w-100 {% if user_detail.est_blackliste %}btn-glow{% else %}btn-danger-glow{% endif %}"
+            onclick="return confirm('{% if user_detail.est_blackliste %}Retirer {{ user_detail.first_name }} de la blacklist ?{% else %}Blacklister {{ user_detail.first_name }} ?{% endif %}')"
+          >
+            <i class="bi bi-{% if user_detail.est_blackliste %}check-circle{% else %}slash-circle{% endif %} me-2"></i>
+            {% if user_detail.est_blackliste %}Retirer de la blacklist{% else %}Blacklister{% endif %}
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Emprunts + Réservations -->
+    <div class="col-lg-8">
+      <!-- Stats rapides -->
+      <div class="row g-3 mb-4" data-aos="fade-up">
+        <div class="col-4">
+          <div class="stat-glow" style="padding: 1.5rem">
+            <div class="stat-glow-number" style="font-size: 2.5rem">
+              {{ emprunts|length }}
+            </div>
+            <div class="stat-glow-label">
+              <i class="bi bi-journal-arrow-down me-1"></i>Emprunts total
+            </div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div
+            class="stat-glow"
+            style="padding: 1.5rem; border-top-color: var(--success)"
+          >
+            <div
+              class="stat-glow-number"
+              style="
+                font-size: 2.5rem;
+                background: linear-gradient(135deg, var(--success), #34d399);
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+              "
+            >
+              {{ emprunts_en_cours|default:0 }}
+            </div>
+            <div class="stat-glow-label">
+              <i class="bi bi-hourglass-split me-1"></i>En cours
+            </div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div
+            class="stat-glow"
+            style="padding: 1.5rem; border-top-color: var(--accent)"
+          >
+            <div
+              class="stat-glow-number"
+              style="
+                font-size: 2.5rem;
+                background: linear-gradient(135deg, var(--accent), #fbbf24);
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+              "
+            >
+              {{ reservations|length }}
+            </div>
+            <div class="stat-glow-label">
+              <i class="bi bi-bookmark me-1"></i>Réservations
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tableau emprunts -->
+      <div class="glass-card mb-4" data-aos="fade-up" data-aos-delay="100">
+        <h5
+          class="fw-bold mb-4"
+          style="
+            background: linear-gradient(135deg, #fff, #a5b4fc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          <i class="bi bi-journal-arrow-down me-2"></i>Historique des emprunts
+        </h5>
+        <div class="table-responsive">
+          <table class="table mb-0" style="color: #cbd5e1">
+            <thead>
+              <tr style="border-color: rgba(255, 255, 255, 0.08)">
+                <th style="color: #94a3b8; padding: 1rem">Livre</th>
+                <th style="color: #94a3b8">Statut</th>
+                <th style="color: #94a3b8">Date demande</th>
+                <th style="color: #94a3b8">Retour prévu</th>
+                <th style="color: #94a3b8">Amende</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in emprunts %}
+              <tr style="border-color: rgba(255, 255, 255, 0.05)">
+                <td style="padding: 1rem; color: #e2e8f0; font-weight: 500">
+                  {{ e.livre.titre|truncatechars:30 }}
+                </td>
+                <td>
+                  <span
+                    class="book-status-premium {% if e.statut == 'en_cours' %}status-dispo {% elif e.statut == 'retard' %}status-empr {% elif e.statut == 'retourne' %}status-arch {% else %}status-res{% endif %}"
+                  >
+                    {{ e.get_statut_display }}
+                  </span>
+                </td>
+                <td style="color: #94a3b8; font-size: 0.9rem">
+                  {{ e.date_demande|date:"d/m/Y" }}
+                </td>
+                <td style="color: #94a3b8; font-size: 0.9rem">
+                  {{ e.date_retour_prevue|date:"d/m/Y"|default:"—" }}
+                </td>
+                <td style="color: #fbbf24; font-weight: 600">
+                  {% if e.amende_totale %}{{ e.amende_totale }} DH{% else %}—{% endif %}
+                </td>
+              <tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4" style="color: #64748b">
+                  <i class="bi bi-inbox fs-3 d-block mb-2"></i>Aucun emprunt.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tableau réservations -->
+      <div class="glass-card" data-aos="fade-up" data-aos-delay="200">
+        <h5
+          class="fw-bold mb-4"
+          style="
+            background: linear-gradient(135deg, #fff, #fbbf24);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          <i class="bi bi-bookmark-fill me-2"></i>Réservations actives
+        </h5>
+        <div class="table-responsive">
+          <table class="table mb-0" style="color: #cbd5e1">
+            <thead>
+              <tr style="border-color: rgba(255, 255, 255, 0.08)">
+                <th style="color: #94a3b8; padding: 1rem">Livre</th>
+                <th style="color: #94a3b8">Position file</th>
+                <th style="color: #94a3b8">Date réservation</th>
+                <th style="color: #94a3b8">Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in reservations %}
+              <tr style="border-color: rgba(255, 255, 255, 0.05)">
+                <td style="padding: 1rem; color: #e2e8f0; font-weight: 500">
+                  {{ r.livre.titre|truncatechars:30 }}
+                </td>
+                <td style="color: #a5b4fc; font-weight: 600">
+                  #{{ r.position_file }}
+                </td>
+                <td style="color: #94a3b8; font-size: 0.9rem">
+                  {{ r.date_reservation|date:"d/m/Y" }}
+                </td>
+                <td>
+                  {% if r.est_active %}
+                  <span style="color: #34d399"
+                    ><i class="bi bi-check-circle-fill me-1"></i>Oui</span
+                  >
+                  {% else %}
+                  <span style="color: #64748b"
+                    ><i class="bi bi-x-circle me-1"></i>Non</span
+                  >
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center py-4" style="color: #64748b">
+                  <i class="bi bi-bookmark fs-3 d-block mb-2"></i>Aucune réservation.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}Connexion - BiblIntel{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+      <!-- Floating decorative elements -->
+      <div class="position-relative">
+        <div
+          class="position-absolute"
+          style="
+            top: -60px;
+            left: -60px;
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(
+              135deg,
+              var(--primary),
+              var(--secondary)
+            );
+            border-radius: 50%;
+            opacity: 0.3;
+            filter: blur(40px);
+          "
+        ></div>
+        <div
+          class="position-absolute"
+          style="
+            bottom: -40px;
+            right: -40px;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(
+              135deg,
+              var(--accent),
+              var(--secondary)
+            );
+            border-radius: 50%;
+            opacity: 0.2;
+            filter: blur(30px);
+          "
+        ></div>
+
+        <div class="form-premium position-relative" data-aos="zoom-in">
+          <div class="text-center mb-4">
+            <div
+              class="d-inline-flex align-items-center justify-content-center mb-3"
+              style="
+                width: 80px;
+                height: 80px;
+                background: linear-gradient(
+                  135deg,
+                  var(--primary),
+                  var(--secondary)
+                );
+                border-radius: 24px;
+                box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4);
+              "
+            >
+              <i class="bi bi-person-circle fs-1 text-white"></i>
+            </div>
+            <h2 class="fw-bold mb-2">Connexion</h2>
+            <p style="color: #64748b">Accédez à votre bibliothèque numérique</p>
+          </div>
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-4">
+              <label class="form-label-premium">Nom d'utilisateur</label>
+              <div class="input-group">
+                <span
+                  class="input-group-text border-0"
+                  style="
+                    background: rgba(255, 255, 255, 0.05);
+                    color: #64748b;
+                    border-radius: 16px 0 0 16px;
+                  "
+                >
+                  <i class="bi bi-person"></i>
+                </span>
+                <input
+                  type="text"
+                  name="username"
+                  class="form-control form-control-premium border-start-0"
+                  placeholder="Votre nom d'utilisateur"
+                  required
+                  style="border-radius: 0 16px 16px 0"
+                />
+              </div>
+            </div>
+            <div class="mb-4">
+              <label class="form-label-premium">Mot de passe</label>
+              <div class="input-group">
+                <span
+                  class="input-group-text border-0"
+                  style="
+                    background: rgba(255, 255, 255, 0.05);
+                    color: #64748b;
+                    border-radius: 16px 0 0 16px;
+                  "
+                >
+                  <i class="bi bi-lock"></i>
+                </span>
+                <input
+                  type="password"
+                  name="password"
+                  class="form-control form-control-premium border-start-0"
+                  placeholder="Votre mot de passe"
+                  required
+                  style="border-radius: 0 16px 16px 0"
+                />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-glow w-100 py-3 mb-4">
+              <i class="bi bi-box-arrow-in-right me-2"></i>Se connecter
+            </button>
+          </form>
+
+          <div class="text-center">
+            <p style="color: #64748b">
+              Pas encore de compte ?
+              <a
+                href="{% url 'users:register' %}"
+                style="
+                  color: var(--primary);
+                  text-decoration: none;
+                  font-weight: 600;
+                "
+                >S'inscrire</a
+              >
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

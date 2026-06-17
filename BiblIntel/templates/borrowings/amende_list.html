@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% block title %}Amendes impayées - BiblIntel{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="mb-5" data-aos="fade-up">
+    <h1 class="fw-bold" style="background: linear-gradient(135deg, #fff, #fbbf24); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+      <i class="bi bi-cash-coin me-3"></i>Amendes
+    </h1>
+    <p style="color: #64748b">
+      Total des amendes impayées : <strong class="text-warning">{{ total_amendes }} DH</strong>
+    </p>
+  </div>
+
+  <!-- ✅ AJOUT : FILTRES -->
+   <!-- Filtres rapides pour admin -->
+{% if request.user.is_staff %}
+<div class="mb-4 d-flex gap-2 flex-wrap">
+    <a href="?statut=impayee" class="btn btn-sm {% if request.GET.statut == 'impayee' %}btn-glow{% else %}btn-secondary{% endif %}">
+        🔴 Impayées
+    </a>
+    <a href="?statut=payee" class="btn btn-sm {% if request.GET.statut == 'payee' %}btn-glow{% else %}btn-secondary{% endif %}">
+        🟢 Payées
+    </a>
+    <a href="{% url 'borrowings:amende_list' %}" class="btn btn-sm btn-secondary">
+        📋 Toutes
+    </a>
+</div>
+{% endif %}
+  <div class="glass-card mb-4" data-aos="fade-up">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label-premium" style="font-size: 0.8rem;">Statut</label>
+        <div class="select-dark-wrapper">
+          <select name="statut" class="form-control form-control-premium">
+            <option value="">Tous</option>
+            <option value="impayee" {% if request.GET.statut == 'impayee' %}selected{% endif %}>Impayées</option>
+            <option value="payee" {% if request.GET.statut == 'payee' %}selected{% endif %}>Payées</option>
+          </select>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label-premium" style="font-size: 0.8rem;">Montant min (DH)</label>
+        <input type="number" name="montant_min" class="form-control form-control-premium" value="{{ request.GET.montant_min }}" placeholder="0" step="10">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label-premium" style="font-size: 0.8rem;">Montant max (DH)</label>
+        <input type="number" name="montant_max" class="form-control form-control-premium" value="{{ request.GET.montant_max }}" placeholder="1000" step="10">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label-premium" style="font-size: 0.8rem;">Utilisateur</label>
+        <input type="text" name="utilisateur" class="form-control form-control-premium" placeholder="Nom d'utilisateur..." value="{{ request.GET.utilisateur }}">
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-glow w-100">
+          <i class="bi bi-funnel me-2"></i>Filtrer
+        </button>
+      </div>
+      <div class="col-md-12">
+        {% if request.GET.statut or request.GET.montant_min or request.GET.montant_max or request.GET.utilisateur %}
+        <a href="{% url 'borrowings:amende_list' %}" class="btn btn-sm" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #94a3b8; border-radius: 16px;">
+          <i class="bi bi-x-lg me-2"></i>Réinitialiser les filtres
+        </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <div class="glass-card" data-aos="fade-up">
+    <div class="table-responsive">
+      <table class="table mb-0" style="color: #cbd5e1">
+        <thead>
+          <tr style="border-color: rgba(255, 255, 255, 0.08)">
+            <th style="color: #94a3b8">Utilisateur</th>
+            <th style="color: #94a3b8">Livre</th>
+            <th style="color: #94a3b8">Date d'emprunt</th>
+            <th style="color: #94a3b8">Retour prévu</th>
+            <th style="color: #94a3b8">Retard (jours)</th>
+            <th style="color: #94a3b8">Amende</th>
+            <th style="color: #94a3b8">Statut</th>
+            <th style="color: #94a3b8">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in emprunts %}
+          <tr style="border-color: rgba(255, 255, 255, 0.05)">
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.75rem">
+                  {{ emp.utilisateur.first_name|first }}{{ emp.utilisateur.last_name|first }}
+                </div>
+                <span>{{ emp.utilisateur.first_name }} {{ emp.utilisateur.last_name }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                {% if emp.livre.couverture %}
+                <img src="{{ emp.livre.couverture.url }}" style="width: 30px; height: 40px; object-fit: cover; border-radius: 4px;">
+                {% else %}
+                <div style="width: 30px; height: 40px; background: linear-gradient(135deg, #6366f1, #ec4899); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                  <i class="bi bi-book" style="font-size: 0.7rem; color: white;"></i>
+                </div>
+                {% endif %}
+                <span>{{ emp.livre.titre|truncatechars:30 }}</span>
+              </div>
+            </td>
+            <td style="color: #94a3b8">{{ emp.date_demande|date:"d/m/Y" }}</td>
+            <td style="color: #94a3b8">{{ emp.date_retour_prevue|date:"d/m/Y"|default:"—" }}</td>
+            <td class="text-danger fw-bold">{{ emp.calculer_retard }} j</td>
+            <td class="text-warning fw-bold">{{ emp.amende_totale|floatformat:0 }} DH</td>
+            <td>
+              {% if emp.est_payee %}
+              <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.3rem 0.8rem;">
+                <i class="bi bi-check-circle-fill me-1"></i>Payée
+              </span>
+              {% else %}
+              <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 0.3rem 0.8rem;">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>Impayée
+              </span>
+              {% endif %}
+            </td>
+            <td>
+              <td>
+    <div class="d-flex gap-2">
+        {% if not emp.est_payee %}
+            {% if not request.user.is_staff %}
+                <a href="{% url 'borrowings:payer_amende_manuel' emp.pk %}" class="btn btn-sm btn-success-glow" title="Paiement manuel">
+                    <i class="bi bi-cash-stack"></i> Manuel
+                </a>
+                <a href="{% url 'borrowings:payer_amende_en_ligne' emp.pk %}" class="btn btn-sm btn-glow" title="Paiement en ligne">
+                    <i class="bi bi-credit-card"></i> En ligne
+                </a>
+            {% else %}
+                <span class="text-muted">Action réservée aux utilisateurs</span>
+            {% endif %}
+        {% else %}
+            <span class="text-success"><i class="bi bi-check-circle"></i> Payée</span>
+        {% endif %}
+    </div>
+</td>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5" style="color: #64748b">
+              <i class="bi bi-check-circle display-1 d-block mb-3" style="color: #34d399; opacity: 0.5;"></i>
+              <h4 class="mb-2">Aucune amende trouvée</h4>
+              <p>Rien à afficher avec les filtres actuels.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Information sur les modes de paiement -->
+  <div class="row g-3 mt-4" data-aos="fade-up">
+    <div class="col-md-6">
+      <div class="glass-card text-center p-3">
+        <i class="bi bi-cash-stack fs-2" style="color: #34d399;"></i>
+        <h5 class="mt-2 mb-1">Paiement manuel</h5>
+        <p class="small" style="color: #64748b;">À effectuer sur place à la bibliothèque dans un délai maximum d'une semaine.</p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="glass-card text-center p-3">
+        <i class="bi bi-credit-card fs-2" style="color: #a5b4fc;"></i>
+        <h5 class="mt-2 mb-1">Paiement en ligne</h5>
+        <p class="small" style="color: #64748b;">Paiement sécurisé par carte bancaire (compte fictif pour démonstration).</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

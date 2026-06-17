@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Valider un paiement - BiblIntel{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="glass-card" data-aos="fade-up">
+                <div class="text-center mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center mb-3"
+                         style="width: 70px; height: 70px; background: linear-gradient(135deg, #f59e0b, #fbbf24); border-radius: 20px;">
+                        <i class="bi bi-cash-stack fs-2 text-white"></i>
+                    </div>
+                    <h2>Validation du paiement</h2>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Utilisateur :</strong> {{ emprunt.utilisateur.first_name }} {{ emprunt.utilisateur.last_name }}<br>
+                    <strong>Livre :</strong> {{ emprunt.livre.titre }}<br>
+                    <strong>Amende :</strong> <span class="text-warning fw-bold">{{ emprunt.amende_totale }} DH</span><br>
+                    <strong>Points fidélité :</strong> {{ emprunt.utilisateur.points_fidelite }} pts
+                </div>
+
+                {% if emprunt.utilisateur.points_fidelite >= 100 %}
+                <div class="alert alert-success">
+                    <i class="bi bi-star-fill me-2"></i>
+                    Réduction 50% applicable ({{ emprunt.utilisateur.points_fidelite }} points)
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-success-glow flex-fill">
+                            <i class="bi bi-check-circle me-2"></i>Valider le paiement
+                        </button>
+                        <a href="{% url 'dashboard:paiements_manuels_attente' %}" class="btn btn-secondary flex-fill">
+                            Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

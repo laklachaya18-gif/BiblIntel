@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% block title %}Notifications & Emprunts - Admin - BiblIntel{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <!-- En-tête -->
+  <div class="mb-5" data-aos="fade-up">
+    <h1
+      class="fw-bold"
+      style="
+        background: linear-gradient(135deg, #fff, #a5b4fc);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      "
+    >
+      <i class="bi bi-bell me-3"></i>Suivi des emprunts & notifications
+    </h1>
+    <p style="color: #64748b">
+      Vue globale de tous les emprunts et notifications envoyées aux
+      utilisateurs.
+    </p>
+  </div>
+
+  <!-- Liste des emprunts -->
+  <div class="glass-card mb-5" data-aos="fade-up">
+    <h3
+      class="fw-bold mb-4"
+      style="
+        background: linear-gradient(135deg, #fff, #a5b4fc);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      "
+    >
+      <i class="bi bi-journal-arrow-down me-2"></i>Tous les emprunts
+    </h3>
+
+    {% if emprunts %}
+    <div class="table-responsive">
+      <table class="table" style="color: #cbd5e1">
+        <thead>
+          <tr style="border-color: rgba(255, 255, 255, 0.1)">
+            <th style="color: #94a3b8">Utilisateur</th>
+            <th style="color: #94a3b8">Livre</th>
+            <th style="color: #94a3b8">Statut</th>
+            <th style="color: #94a3b8">Date demande</th>
+            <th style="color: #94a3b8">Retour prévu</th>
+            <th style="color: #94a3b8">Amende</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emprunt in emprunts %}
+          <tr style="border-color: rgba(255, 255, 255, 0.05)">
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div
+                  class="user-avatar"
+                  style="width: 30px; height: 30px; font-size: 0.75rem"
+                >
+                  {{ emprunt.utilisateur.first_name|first }}{{ emprunt.utilisateur.last_name|first }}
+                </div>
+                <span
+                  >{{ emprunt.utilisateur.first_name }} {{ emprunt.utilisateur.last_name }}</span
+                >
+              </div>
+            </td>
+            <td>{{ emprunt.livre.titre }}</td>
+            <td>
+              {% if emprunt.statut == 'en_cours' %}
+              <span
+                class="badge"
+                style="background: rgba(16, 185, 129, 0.2); color: #34d399"
+                >En cours</span
+              >
+              {% elif emprunt.statut == 'retard' %}
+              <span
+                class="badge"
+                style="background: rgba(239, 68, 68, 0.2); color: #f87171"
+                >Retard</span
+              >
+              {% elif emprunt.statut == 'retourne' %}
+              <span
+                class="badge"
+                style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc"
+                >Retourné</span
+              >
+              {% elif emprunt.statut == 'approuve' %}
+              <span
+                class="badge"
+                style="background: rgba(245, 158, 11, 0.2); color: #fbbf24"
+                >Approuvé</span
+              >
+              {% else %}
+              <span
+                class="badge"
+                style="background: rgba(100, 116, 139, 0.2); color: #94a3b8"
+                >{{ emprunt.get_statut_display }}</span
+              >
+              {% endif %}
+            </td>
+            <td style="color: #94a3b8">
+              {{ emprunt.date_demande|date:"d/m/Y" }}
+            </td>
+            <td style="color: #94a3b8">
+              {% if emprunt.date_retour_prevue %}{{ emprunt.date_retour_prevue|date:"d/m/Y" }}{% else %}—{% endif %}
+            </td>
+            <td>
+              {% if emprunt.amende_totale > 0 %}
+              <span style="color: #f87171">{{ emprunt.amende_totale }} DH</span>
+              {% else %}
+              <span style="color: #64748b">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i
+        class="bi bi-journal display-1"
+        style="color: var(--primary); opacity: 0.3"
+      ></i>
+      <p class="mt-3" style="color: #64748b">Aucun emprunt enregistré.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Notifications envoyées aux utilisateurs -->
+  <div class="glass-card" data-aos="fade-up" data-aos-delay="100">
+    <h3
+      class="fw-bold mb-4"
+      style="
+        background: linear-gradient(135deg, #fff, #a5b4fc);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      "
+    >
+      <i class="bi bi-send me-2"></i>Notifications envoyées aux utilisateurs
+    </h3>
+
+    {% if notifications %}
+    <div class="row g-3">
+      {% for notif in notifications %}
+      <div class="col-12">
+        <div
+          class="p-4"
+          style="
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 16px;
+          "
+        >
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="d-flex gap-3">
+              <div>
+                {% if notif.type_notification == 'retour_proche' %}
+                <i class="bi bi-clock-history fs-4" style="color: #fbbf24"></i>
+                {% elif notif.type_notification == 'retard' %}
+                <i class="bi bi-exclamation-triangle fs-4" style="color: #f87171"></i>
+                {% elif notif.type_notification == 'validation' %}
+                <i class="bi bi-check-circle fs-4" style="color: #34d399"></i>
+                {% elif notif.type_notification == 'blacklist' %}
+                <i class="bi bi-slash-circle fs-4" style="color: #f87171"></i>
+                {% elif notif.type_notification == 'disponible' %}
+                <i class="bi bi-book fs-4" style="color: #a5b4fc"></i>
+                {% else %}
+                <i class="bi bi-bell fs-4" style="color: #94a3b8"></i>
+                {% endif %}
+              </div>
+              <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <strong style="color: #e2e8f0">{{ notif.titre }}</strong>
+                  <span
+                    style="
+                      background: rgba(99, 102, 241, 0.15);
+                      color: #a5b4fc;
+                      padding: 0.2rem 0.6rem;
+                      border-radius: 50px;
+                      font-size: 0.75rem;
+                    "
+                  >
+                    → {{ notif.utilisateur.first_name }} {{ notif.utilisateur.last_name }}
+                  </span>
+                </div>
+                <p style="color: #94a3b8; margin: 0; font-size: 0.95rem">
+                  {{ notif.message }}
+                </p>
+              </div>
+            </div>
+            <small style="color: #64748b; white-space: nowrap">
+              <i class="bi bi-calendar me-1"></i>
+              {{ notif.date_creation|date:"d/m/Y H:i" }}
+            </small>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i
+        class="bi bi-bell-slash display-1"
+        style="color: var(--primary); opacity: 0.3"
+      ></i>
+      <p class="mt-3" style="color: #64748b">
+        Aucune notification envoyée aux utilisateurs.
+      </p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

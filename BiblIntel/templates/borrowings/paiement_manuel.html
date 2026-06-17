@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Paiement manuel - BiblIntel{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="glass-card" data-aos="fade-up">
+        <div class="text-center mb-4">
+          <div class="d-inline-flex align-items-center justify-content-center mb-3"
+               style="width: 70px; height: 70px; background: linear-gradient(135deg, #f59e0b, #fbbf24); border-radius: 20px;">
+            <i class="bi bi-cash-stack fs-2 text-white"></i>
+          </div>
+          <h2 class="fw-bold">Paiement manuel</h2>
+          <p style="color: #64748b">Amende : <strong class="text-warning">{{ emprunt.amende_totale }} DH</strong></p>
+        </div>
+
+        <!-- DATE LIMITE -->
+        <div class="alert alert-warning mb-4">
+          <i class="bi bi-clock-history me-2"></i>
+          <strong>⚠️ Délai de paiement limité !</strong><br>
+          À payer avant le <strong>{{ date_limite|date:"d/m/Y" }}</strong>
+        </div>
+
+        <!-- RÉDUCTION -->
+        {% if user.points_fidelite >= 100 %}
+        <div class="alert alert-success mb-4">
+          <i class="bi bi-star-fill me-2"></i>
+          Vous avez {{ user.points_fidelite }} points → <strong>Réduction 50%</strong> automatique !
+        </div>
+        {% endif %}
+
+        <!-- INSTRUCTIONS -->
+        <div class="alert alert-info mb-4">
+          <i class="bi bi-info-circle-fill me-2"></i>
+          <strong>Comment ça fonctionne ?</strong><br><br>
+          1️⃣ Rendez-vous à la bibliothèque avec votre pièce d'identité<br>
+          2️⃣ Payez l'amende en espèces au bibliothécaire<br>
+          3️⃣ Cliquez sur <strong>"J'ai payé"</strong> ci-dessous<br>
+          4️⃣ Le bibliothécaire validera votre paiement dans son interface<br><br>
+          <small>Vous recevrez une notification une fois la validation effectuée.</small>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-glow w-100 py-3" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+            <i class="bi bi-check-circle me-2"></i>J'ai payé en espèces
+          </button>
+        </form>
+
+        <div class="mt-3 text-center">
+          <a href="{% url 'borrowings:mes_amendes' %}" class="btn btn-secondary">Annuler</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1005 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Lecture - {{ livre.titre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .reader-wrapper {
+    position: relative;
+    background: #0f172a;
+    border-radius: 24px;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    overflow: hidden;
+  }
+
+  #pdf-canvas-container {
+    width: 100%;
+    overflow-y: auto;
+    max-height: 65vh;
+    background: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    gap: 16px;
+  }
+
+  #pdf-canvas-container canvas {
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .textLayer {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    line-height: 1;
+    user-select: text;
+    pointer-events: auto;
+    z-index: 10;
+  }
+
+  .textLayer span {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+    pointer-events: auto;
+    user-select: text;
+  }
+
+  .textLayer br {
+    display: none;
+  }
+
+  .textLayer ::selection {
+    background: rgba(99, 102, 241, 0.4);
+  }
+
+  .pdf-text:hover {
+    background-color: rgba(236, 72, 153, 0.4) !important;
+    border-radius: 4px;
+  }
+
+  .reader-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6rem;
+    background: rgba(15, 23, 42, 0.95);
+    border-top: 1px solid rgba(99, 102, 241, 0.3);
+    flex-wrap: wrap;
+  }
+
+  .page-indicator {
+    color: #a5b4fc;
+    font-weight: 600;
+    background: rgba(99, 102, 241, 0.15);
+    padding: 0.3rem 0.8rem;
+    border-radius: 50px;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    min-width: 100px;
+    text-align: center;
+    font-size: 0.8rem;
+  }
+
+  .btn-reader, .voice-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    color: #e2e8f0;
+    padding: 0.3rem 0.8rem;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+  }
+
+  .btn-reader:hover, .voice-btn:hover {
+    background: linear-gradient(135deg, #6366f1, #ec4899);
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  .bookmark-active {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24) !important;
+    color: #0f172a !important;
+  }
+
+  .speed-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 10px;
+    border-radius: 40px;
+  }
+
+  .speed-control input {
+    width: 70px;
+    accent-color: #6366f1;
+  }
+
+  .music-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 10px;
+    border-radius: 40px;
+  }
+
+  .volume-slider {
+    width: 70px;
+    accent-color: #6366f1;
+  }
+
+  .side-panel {
+    position: fixed;
+    right: -380px;
+    top: 0;
+    width: 380px;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.98);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(99, 102, 241, 0.3);
+    z-index: 1000;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  .side-panel.open {
+    right: 0;
+  }
+
+  .panel-toggle {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(135deg, #6366f1, #ec4899);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 80px;
+    border-radius: 20px 0 0 20px;
+    cursor: pointer;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 1.2rem;
+  }
+
+  .panel-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 15px;
+  }
+
+  .panel-section h4 {
+    color: #a5b4fc;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .word-list {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .word-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+  }
+
+  .word-item:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-radius: 8px;
+  }
+
+  .word-item .word {
+    color: #fbbf24;
+    font-weight: 500;
+    font-size: 0.8rem;
+  }
+
+  .word-item .delete-word {
+    color: #f87171;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .word-item:hover .delete-word {
+    opacity: 1;
+  }
+
+  .notes-textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 12px;
+    color: #e2e8f0;
+    padding: 10px;
+    font-size: 0.8rem;
+    resize: vertical;
+    min-height: 120px;
+  }
+
+  .notes-textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+  }
+
+  .save-notes-btn {
+    margin-top: 8px;
+    background: linear-gradient(135deg, #10b981, #34d399);
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.7rem;
+  }
+
+  .dictionary-popup {
+    position: fixed;
+    background: rgba(30, 41, 59, 0.98);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(99, 102, 241, 0.5);
+    border-radius: 16px;
+    padding: 12px 16px;
+    max-width: 280px;
+    z-index: 10000;
+    display: none;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .dictionary-popup .word {
+    font-weight: bold;
+    color: #a5b4fc;
+    font-size: 1em;
+    margin-bottom: 6px;
+  }
+
+  .dictionary-popup .definition {
+    color: #cbd5e1;
+    font-size: 0.8em;
+    line-height: 1.4;
+  }
+
+  .dictionary-popup .speak-word {
+    margin-top: 8px;
+    background: linear-gradient(135deg, #6366f1, #ec4899);
+    border: none;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.7em;
+  }
+
+  .toast-notif {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: #1e293b;
+    border: 1px solid #10b981;
+    border-radius: 12px;
+    padding: 0.6rem 1rem;
+    z-index: 9999;
+    transform: translateY(120px);
+    opacity: 0;
+    transition: all 0.3s;
+    font-size: 0.8rem;
+  }
+
+  .toast-notif.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  .textLayer span {
+    pointer-events: all;
+    cursor: text;
+    user-select: text;
+  }
+
+  .spinner-ring {
+    width: 35px;
+    height: 35px;
+    border: 3px solid rgba(99, 102, 241, 0.2);
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .bookmark-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    border-radius: 50px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+    color: #fbbf24;
+  }
+
+  .voice-select {
+    background: #0f172a;
+    border: 1px solid #6366f1;
+    color: #e2e8f0;
+    padding: 4px 10px;
+    border-radius: 40px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    max-width: 180px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+  <div class="glass-card" style="background: rgba(15, 23, 42, 0.8);">
+    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+      <div>
+        <h2 class="fw-bold mb-0" style="background: linear-gradient(135deg, #fff, #a5b4fc); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 1.2rem;">
+          {{ livre.titre }}
+        </h2>
+        <div class="d-flex align-items-center gap-2 mt-1">
+          <p style="color: #94a3b8; margin: 0; font-size: 0.7rem;">
+            <i class="bi bi-person me-1"></i>{{ livre.auteur }}
+          </p>
+          {% if saved_page and saved_page > 1 %}
+          <span class="bookmark-badge" id="savedBookmarkBadge">
+            <i class="bi bi-bookmark-fill"></i> {{ saved_page }}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+      <a href="{% url 'books:livre_detail' livre.pk %}" class="btn-reader" style="padding: 0.2rem 0.6rem; font-size: 0.7rem;">
+        <i class="bi bi-arrow-left"></i> Retour
+      </a>
+    </div>
+
+    {% if pdf_url %}
+    <div class="reader-wrapper">
+      <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-ring"></div>
+        <p style="font-size: 0.7rem;">Chargement...</p>
+      </div>
+      <div id="pdf-canvas-container"></div>
+
+      <div class="reader-controls">
+        <button class="btn-reader" onclick="changePage(-1)">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <span class="page-indicator" id="pageIndicator">--/--</span>
+        <button class="btn-reader" onclick="changePage(1)">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+
+        <button class="voice-btn" id="playBtn" onclick="startReading()">
+          <i class="bi bi-play-fill"></i> Lecture
+        </button>
+
+        <button class="voice-btn" onclick="stopReading()">
+          <i class="bi bi-stop-fill"></i> Stop
+        </button>
+
+        <button class="voice-btn" id="bookmarkBtn" onclick="saveBookmark()" title="Sauvegarder cette page">
+          <i class="bi bi-bookmark"></i>
+        </button>
+
+        <button class="voice-btn" onclick="goToBookmark()" title="Retour au marque-page">
+          <i class="bi bi-arrow-return-left"></i> Retour
+        </button>
+
+        <div class="music-control">
+          <i class="bi bi-music-note-beamed"></i>
+          <button class="voice-btn" onclick="toggleMusic()" style="padding: 0.2rem 0.5rem;" id="musicToggleBtn">
+            <i class="bi bi-play-fill"></i>
+          </button>
+          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="20">
+        </div>
+
+        <div class="speed-control">
+          <i class="bi bi-speedometer2"></i>
+          <input type="range" id="speedRange" min="0.5" max="1.5" step="0.1" value="0.9">
+          <span id="speedValue">0.9x</span>
+        </div>
+
+        <select id="voiceSelect" class="voice-select">
+          <option value="">Voix automatique</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mt-2 text-center">
+      <p class="mb-0" style="color: #64748b; font-size: 0.65rem;">
+        <i class="bi bi-info-circle"></i>
+        Cliquez sur "Lecture" pour lire toute la page | Cliquez sur un mot pour sa définition
+      </p>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i class="bi bi-file-earmark-x display-1" style="opacity:0.4"></i>
+      <h4>PDF non disponible</h4>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Panneau latéral droit -->
+<button class="panel-toggle" id="panelToggle">
+  <i class="bi bi-book"></i>
+  <i class="bi bi-pencil-square"></i>
+</button>
+
+<div class="side-panel" id="sidePanel">
+  <div class="panel-section">
+    <h4><i class="bi bi-book"></i> Mes mots</h4>
+    <div class="word-list" id="wordList">
+      <p style="color: #64748b; text-align: center; font-size: 0.7rem;">Cliquez sur un mot pour l'ajouter</p>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <h4><i class="bi bi-pencil-square"></i> Mes notes</h4>
+    <textarea id="userNotes" class="notes-textarea" placeholder="Écrivez vos notes personnelles..."></textarea>
+    <button class="save-notes-btn" onclick="saveNotes()">💾 Sauvegarder</button>
+  </div>
+</div>
+
+<!-- Popup dictionnaire -->
+<div id="dictionaryPopup" class="dictionary-popup">
+  <div class="word" id="dictWord"></div>
+  <div class="definition" id="dictDefinition"></div>
+  <button class="speak-word" onclick="speakDefinition()">
+    <i class="bi bi-mic"></i> Écouter
+  </button>
+</div>
+
+<div class="toast-notif" id="toast">
+  <span id="toastMsg"></span>
+</div>
+
+<div id="readerData"
+     data-pdf-url="{{ pdf_url|escapejs }}"
+     data-bookmark-url="{% url 'books:save_bookmark' livre.id %}"
+     data-notes-url="{% url 'books:save_notes' livre.id %}"
+     data-dict-url="{% url 'books:save_word' livre.id %}"
+     data-saved-page="{{ saved_page|default:1 }}"
+     data-saved-notes="{{ notes|default:''|escapejs }}"
+     data-saved-words='{{ saved_words|default:"[]" }}'
+     data-musique-url="{% if livre.musique_ambiance %}{{ livre.musique_ambiance.url }}{% endif %}"
+     data-livre-id="{{ livre.id }}"
+     data-csrf="{{ csrf_token }}"
+     data-ai-url="{% url 'books:ai_dictionary' %}"
+     style="display:none">
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  pdfjsLib.disableFontFace = false;
+
+  // ========== VARIABLES ==========
+  let pdfDoc = null;
+  let currentPage = 1;
+  let totalPages = 0;
+  let scale = 1.2;
+  let currentUtterance = null;
+  let isReading = false;
+  let bookmarkedPage = parseInt(document.getElementById('readerData').dataset.savedPage) || 1;
+  let savedWords = JSON.parse(document.getElementById('readerData').dataset.savedWords || '[]');
+  let currentVoice = null;
+  let backgroundMusic = null;
+  let isMusicPlaying = false;
+  let pageTexts = [];
+
+  const PDF_URL = document.getElementById('readerData').dataset.pdfUrl;
+  const BOOKMARK_URL = document.getElementById('readerData').dataset.bookmarkUrl;
+  const NOTES_URL = document.getElementById('readerData').dataset.notesUrl;
+  const DICT_URL = document.getElementById('readerData').dataset.dictUrl;
+  const AI_URL = document.getElementById('readerData').dataset.aiUrl;
+  const MUSIQUE_URL = document.getElementById('readerData').dataset.musiqueUrl;
+  const CSRF = document.getElementById('readerData').dataset.csrf;
+  const container = document.getElementById('pdf-canvas-container');
+  const pageIndicator = document.getElementById('pageIndicator');
+  const loading = document.getElementById('loadingOverlay');
+  const speedRange = document.getElementById('speedRange');
+  const speedValue = document.getElementById('speedValue');
+  const playBtn = document.getElementById('playBtn');
+  const bookmarkBtn = document.getElementById('bookmarkBtn');
+  const volumeSlider = document.getElementById('volumeSlider');
+  const panelToggle = document.getElementById('panelToggle');
+  const sidePanel = document.getElementById('sidePanel');
+
+  // ========== DÉTECTION LANGUE ==========
+  function detectLanguage(text) {
+    if (!text || text.length < 20) return 'fr-FR';
+
+    const sample = text.slice(0, 300).toLowerCase();
+
+    const scores = {
+      'fr-FR': (sample.match(/\b(le|la|les|un|une|des|est|que|qui|dans|pour|avec|sur|par|au|du|il|elle|nous|vous|ils|elles|je|tu|pas|plus|mais|ou|et|donc|or|ni|car)\b/g) || []).length,
+      'en-US': (sample.match(/\b(the|a|an|is|are|was|were|be|been|have|has|had|do|does|did|will|would|could|should|may|might|shall|and|or|but|in|on|at|to|for|of|with|by|from|this|that|these|those|it|he|she|we|they|i|you)\b/g) || []).length,
+      'ar-SA': (sample.match(/[\u0600-\u06FF]/g) || []).length > 10 ? 50 : 0,
+      'es-ES': (sample.match(/\b(el|la|los|las|un|una|es|son|que|en|de|por|para|con|su|se|al|del|lo|si|pero|como|más|ya|también)\b/g) || []).length,
+      'de-DE': (sample.match(/\b(der|die|das|ein|eine|ist|sind|war|haben|und|oder|aber|ich|du|er|sie|es|wir|ihr|nicht|mit|auf|in|bei|zu|von|dem|den)\b/g) || []).length,
+    };
+
+    return Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
+  }
+
+  // ========== DICTIONNAIRE IA ==========
+  async function getAIDefinition(word) {
+    try {
+      const response = await fetch(AI_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": CSRF
+        },
+        body: JSON.stringify({ word: word })
+      });
+
+      if (!response.ok) {
+        console.error("Erreur serveur :", response.status);
+        return "Erreur serveur du dictionnaire.";
+      }
+
+      const data = await response.json();
+
+      if (data.result) return data.result;
+      if (data.definition) return data.definition;
+      return "Aucune définition trouvée.";
+
+    } catch (error) {
+      console.error("Erreur dictionnaire :", error);
+      return "Impossible de récupérer la définition.";
+    }
+  }
+
+  // ========== MUSIQUE ==========
+  const defaultMusicUrl = "{% static 'musiques/pluie_voiture.m4a' %}";
+
+  function getMusicUrl() {
+    if (MUSIQUE_URL && MUSIQUE_URL !== 'None' && MUSIQUE_URL !== '') return MUSIQUE_URL;
+    return defaultMusicUrl;
+  }
+
+  function startMusic() {
+    if (backgroundMusic) backgroundMusic.pause();
+    backgroundMusic = new Audio(getMusicUrl());
+    backgroundMusic.loop = true;
+    backgroundMusic.volume = volumeSlider ? volumeSlider.value / 100 : 0.2;
+    backgroundMusic.play().catch(e => console.log("Musique auto-play bloquée"));
+    isMusicPlaying = true;
+    const musicBtn = document.getElementById('musicToggleBtn');
+    if (musicBtn) musicBtn.innerHTML = '<i class="bi bi-pause-fill"></i>';
+  }
+
+  function stopMusic() {
+    if (backgroundMusic) {
+      backgroundMusic.pause();
+      backgroundMusic = null;
+    }
+    isMusicPlaying = false;
+    const musicBtn = document.getElementById('musicToggleBtn');
+    if (musicBtn) musicBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+  }
+
+  function toggleMusic() {
+    if (isMusicPlaying) stopMusic();
+    else startMusic();
+  }
+
+  if (volumeSlider) {
+    volumeSlider.addEventListener('input', () => {
+      if (backgroundMusic) backgroundMusic.volume = volumeSlider.value / 100;
+    });
+  }
+
+  // ========== PANEL LATÉRAL ==========
+  panelToggle.addEventListener('click', () => sidePanel.classList.toggle('open'));
+
+  // ========== MOTS SAUVEGARDÉS ==========
+  function loadSavedWords() {
+    const wordList = document.getElementById('wordList');
+    if (!wordList) return;
+    if (savedWords.length === 0) {
+      wordList.innerHTML = '<p style="color: #64748b; text-align: center; font-size: 0.7rem;">Cliquez sur un mot pour l\'ajouter</p>';
+      return;
+    }
+    wordList.innerHTML = savedWords.map(word => `
+      <div class="word-item" onclick="searchWord('${word.replace(/'/g, "\\'")}')">
+        <span class="word">📖 ${word}</span>
+        <span class="delete-word" onclick="event.stopPropagation(); deleteWord('${word.replace(/'/g, "\\'")}')">🗑️</span>
+      </div>
+    `).join('');
+  }
+
+  function addWordToList(word, definition) {
+    if (!savedWords.includes(word)) {
+      savedWords.push(word);
+      fetch(DICT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF },
+        body: JSON.stringify({ word: word, definition: definition }),
+      }).catch(e => console.log(e));
+      loadSavedWords();
+      showToast(`📚 "${word}" ajouté`);
+    }
+  }
+
+  function deleteWord(word) {
+    savedWords = savedWords.filter(w => w !== word);
+    loadSavedWords();
+    showToast(`🗑️ "${word}" supprimé`);
+  }
+
+  async function searchWord(word) {
+    const cleanWord = word.replace(/[^\p{L}\p{N}\s]/gu, '');
+    const definition = await getAIDefinition(cleanWord);
+    document.getElementById('dictWord').innerHTML = cleanWord;
+    document.getElementById('dictDefinition').innerHTML = definition;
+    const popup = document.getElementById('dictionaryPopup');
+    popup.style.display = 'block';
+    popup.style.left = '50%';
+    popup.style.top = '50%';
+    popup.style.transform = 'translate(-50%, -50%)';
+    setTimeout(() => {
+      document.addEventListener('click', function closePopup(e) {
+        if (!popup.contains(e.target)) {
+          popup.style.display = 'none';
+          document.removeEventListener('click', closePopup);
+        }
+      });
+    }, 100);
+  }
+
+  function speakDefinition() {
+    const definition = document.getElementById('dictDefinition').innerText;
+    const word = document.getElementById('dictWord').innerText;
+    if (definition) {
+      const utterance = new SpeechSynthesisUtterance(definition);
+      utterance.rate = 0.8;
+      utterance.lang = detectLanguage(word + ' ' + definition);
+      speechSynthesis.speak(utterance);
+    }
+  }
+
+  // ========== NOTES ==========
+  function loadNotes() {
+    const savedNotes = document.getElementById('readerData').dataset.savedNotes;
+    const notesArea = document.getElementById('userNotes');
+    if (savedNotes && savedNotes !== 'None' && savedNotes !== 'null' && notesArea) {
+      notesArea.value = savedNotes;
+    }
+  }
+
+  function saveNotes() {
+    const notes = document.getElementById('userNotes').value;
+    fetch(NOTES_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF },
+      body: JSON.stringify({ notes: notes }),
+    }).then(r => r.json()).then(data => { if (data.success) showToast("📝 Notes sauvegardées !"); })
+      .catch(() => showToast("Erreur de sauvegarde"));
+  }
+
+  // ========== MARQUE-PAGE ==========
+  function updateBookmarkUI() {
+    if (bookmarkBtn) {
+      if (currentPage === bookmarkedPage) {
+        bookmarkBtn.classList.add('bookmark-active');
+        bookmarkBtn.innerHTML = '<i class="bi bi-bookmark-fill"></i>';
+      } else {
+        bookmarkBtn.classList.remove('bookmark-active');
+        bookmarkBtn.innerHTML = '<i class="bi bi-bookmark"></i>';
+      }
+    }
+  }
+
+  function saveBookmark() {
+    bookmarkedPage = currentPage;
+    updateBookmarkUI();
+    fetch(BOOKMARK_URL, { method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF }, body: JSON.stringify({ page: bookmarkedPage }) }).catch(() => showToast("Erreur"));
+    showToast(`🔖 Page ${bookmarkedPage} sauvegardée !`);
+    const badge = document.getElementById('savedBookmarkBadge');
+    if (badge) badge.innerHTML = `<i class="bi bi-bookmark-fill"></i> ${bookmarkedPage}`;
+  }
+
+  function goToBookmark() {
+    if (bookmarkedPage && bookmarkedPage >= 1 && bookmarkedPage <= totalPages) {
+      if (isReading) stopReading();
+      renderPage(bookmarkedPage);
+      showToast(`📍 Retour page ${bookmarkedPage}`);
+    } else {
+      showToast("ℹ️ Aucun marque-page");
+    }
+  }
+
+  // ========== EXTRAIRE TEXTE ==========
+  async function extractTextFromPage(pageNum) {
+    const page = await pdfDoc.getPage(pageNum);
+    const textContent = await page.getTextContent();
+    let text = textContent.items.map(item => item.str).join(' ');
+    text = text.replace(/\b(?:Page|ISBN|Auteur|Titre|Chapitre|Copyright|Éditeur|www\.|http[s]?:\/\/)\s+\w+/gi, '')
+               .replace(/\d+\s*\/\s*\d+/g, '')
+               .replace(/\s+/g, ' ')
+               .trim();
+    return text;
+  }
+
+  // ========== CHARGEMENT PDF ==========
+  async function loadPDF() {
+    try {
+      const loadingTask = pdfjsLib.getDocument(PDF_URL);
+      pdfDoc = await loadingTask.promise;
+      totalPages = pdfDoc.numPages;
+      pageIndicator.textContent = `1 / ${totalPages}`;
+      loading.style.display = 'none';
+
+      for (let i = 1; i <= totalPages; i++) {
+        pageTexts[i] = await extractTextFromPage(i);
+      }
+
+      let startPage = bookmarkedPage;
+      if (startPage < 1 || startPage > totalPages) startPage = 1;
+      await renderPage(startPage);
+      updateBookmarkUI();
+      loadSavedWords();
+      loadNotes();
+      startMusic();
+      loadVoices();
+    } catch (err) {
+      loading.innerHTML = '<p style="color:#f87171;">Erreur de chargement</p>';
+    }
+  }
+
+  // ========== RENDRE UNE PAGE ==========
+  async function renderPage(pageNum) {
+    if (!pdfDoc) return;
+
+    const page = await pdfDoc.getPage(pageNum);
+    const viewport = page.getViewport({ scale });
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    const pageContainer = document.createElement('div');
+    pageContainer.style.position = 'relative';
+    pageContainer.style.width = viewport.width + 'px';
+    pageContainer.style.height = viewport.height + 'px';
+    pageContainer.style.margin = '0 auto';
+
+    const textLayer = document.createElement('div');
+    textLayer.className = 'textLayer';
+    textLayer.style.position = 'absolute';
+    textLayer.style.left = '0';
+    textLayer.style.top = '0';
+    textLayer.style.width = viewport.width + 'px';
+    textLayer.style.height = viewport.height + 'px';
+    textLayer.style.setProperty('--scale-factor', viewport.scale);
+    textLayer.style.zIndex = '10';
+    textLayer.style.pointerEvents = 'auto';
+    textLayer.style.userSelect = 'text';
+
+    pageContainer.appendChild(canvas);
+    pageContainer.appendChild(textLayer);
+    container.innerHTML = '';
+    container.appendChild(pageContainer);
+
+    await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+    const textContent = await page.getTextContent();
+
+    await pdfjsLib.renderTextLayer({
+      textContentSource: textContent,
+      container: textLayer,
+      viewport: viewport,
+      textDivs: []
+    }).promise;
+
+    textLayer.querySelectorAll('span').forEach(span => {
+      span.style.pointerEvents = 'auto';
+      span.style.userSelect = 'text';
+      span.style.cursor = 'text';
+      span.style.color = 'transparent';
+    });
+
+    textLayer.onmouseup = async function(e) {
+      setTimeout(async () => {
+        const selection = window.getSelection();
+        if (!selection) return;
+        const selectedText = selection.toString().trim();
+        if (!selectedText || selectedText.length < 2) return;
+
+        const cleanWord = selectedText.replace(/[^\p{L}\p{N}\s]/gu, '').trim();
+        if (!cleanWord) return;
+
+        try {
+          const definition = await getAIDefinition(cleanWord);
+          const popup = document.getElementById('dictionaryPopup');
+          document.getElementById('dictWord').innerHTML = cleanWord;
+          document.getElementById('dictDefinition').innerHTML = definition || "Aucune définition trouvée.";
+          addWordToList(cleanWord, definition);
+          popup.style.display = 'block';
+          popup.style.left = (e.clientX + 15) + 'px';
+          popup.style.top = (e.clientY - 70) + 'px';
+          popup.style.transform = 'none';
+
+          const closePopup = (ev) => {
+            if (!popup.contains(ev.target)) {
+              popup.style.display = 'none';
+              document.removeEventListener('click', closePopup);
+            }
+          };
+          setTimeout(() => document.addEventListener('click', closePopup), 100);
+        } catch(err) {
+          showToast("❌ Erreur dictionnaire");
+        }
+      }, 20);
+    };
+
+    currentPage = pageNum;
+    pageIndicator.textContent = `${currentPage} / ${totalPages}`;
+    updateBookmarkUI();
+  }
+
+  // ========== LECTURE VOCALE ==========
+  async function startReading() {
+    if (!pdfDoc) return;
+
+    stopReading();
+
+    const textToRead = pageTexts[currentPage];
+
+    // Page vide → passer à la suivante automatiquement
+    if (!textToRead || textToRead.length < 10) {
+      if (currentPage < totalPages) {
+        changePage(1);
+        setTimeout(() => startReading(), 300);
+      } else {
+        showToast("🏁 Fin du livre atteinte");
+      }
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(textToRead);
+    utterance.rate = parseFloat(speedRange.value);
+    const detectedLang = detectLanguage(textToRead);
+    utterance.lang = detectedLang;
+    utterance.pitch = 1.0;
+    if (currentVoice) utterance.voice = currentVoice;
+
+    utterance.onend = () => {
+      if (currentPage < totalPages) {
+        changePage(1);
+        setTimeout(() => startReading(), 500);
+      } else {
+        isReading = false;
+        playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Lecture';
+        showToast("🏁 Fin du livre atteinte");
+      }
+    };
+
+    utterance.onerror = () => {
+      isReading = false;
+      playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Lecture';
+    };
+
+    currentUtterance = utterance;
+    isReading = true;
+    playBtn.innerHTML = '<i class="bi bi-stop-fill"></i> Stop';
+    showToast(`📖 Lecture page ${currentPage} (${detectedLang})...`);
+    speechSynthesis.speak(utterance);
+  }
+
+  function stopReading() {
+    if (currentUtterance) {
+      speechSynthesis.cancel();
+      currentUtterance = null;
+    }
+    isReading = false;
+    playBtn.innerHTML = '<i class="bi bi-play-fill"></i> Lecture';
+  }
+
+  // ========== VOIX ==========
+  function loadVoices() {
+    const voiceSelect = document.getElementById('voiceSelect');
+    if (!voiceSelect) return;
+    const voices = speechSynthesis.getVoices();
+    if (voices.length === 0) return;
+
+    voiceSelect.innerHTML = '<option value="">Voix automatique</option>';
+
+    // Afficher toutes les voix disponibles
+    voices.forEach(voice => {
+      const option = document.createElement('option');
+      option.value = voice.name;
+      option.textContent = `${voice.name} (${voice.lang})`;
+      voiceSelect.appendChild(option);
+    });
+
+    voiceSelect.addEventListener('change', () => {
+      currentVoice = voiceSelect.value ? voices.find(v => v.name === voiceSelect.value) : null;
+    });
+  }
+
+  if (speechSynthesis) {
+    speechSynthesis.onvoiceschanged = loadVoices;
+    setTimeout(loadVoices, 1000);
+    setTimeout(loadVoices, 2000);
+  }
+
+  // ========== NAVIGATION ==========
+  function changePage(delta) {
+    if (!pdfDoc) return;
+    const newPage = currentPage + delta;
+    if (newPage >= 1 && newPage <= totalPages) {
+      if (isReading) stopReading();
+      renderPage(newPage);
+    }
+  }
+
+  if (speedRange) {
+    speedRange.addEventListener('input', () => speedValue.textContent = speedRange.value + 'x');
+  }
+
+  // ========== TOAST ==========
+  let toastTimer = null;
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    document.getElementById('toastMsg').innerHTML = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  
+
+  loadPDF();
+</script>
+{% endblock %}

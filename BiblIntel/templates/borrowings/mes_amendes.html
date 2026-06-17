@@ -1,0 +1,463 @@
+{% extends 'base.html' %}
+{% block title %}Mes amendes - BiblIntel{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+        <h2 class="fw-bold" style="background: linear-gradient(135deg, #fff, #fbbf24); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            <i class="bi bi-cash-coin me-2"></i>Mes amendes
+        </h2>
+        <a href="{% url 'borrowings:emprunt_list' %}" class="btn btn-glow" style="background: linear-gradient(135deg, #64748b, #94a3b8);">
+            <i class="bi bi-arrow-left me-2"></i>Retour aux emprunts
+        </a>
+    </div>
+
+    <!-- Message d'alerte si > 100 DH -->
+    {% if message_alerte %}
+    <div class="alert alert-danger mb-4" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px;">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ message_alerte }}
+    </div>
+    {% endif %}
+
+    <!-- Cartes résumé -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="0">
+            <div class="glass-card text-center" style="border-top-color: var(--danger);">
+                <div class="stat-glow-number" style="color: #f87171; background: none; -webkit-text-fill-color: #f87171;">
+                    {{ total_impayees|floatformat:0 }} DH
+                </div>
+                <div class="stat-glow-label">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Amendes impayées
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="glass-card text-center" style="border-top-color: var(--success);">
+                <div class="stat-glow-number" style="color: #34d399; background: none; -webkit-text-fill-color: #34d399;">
+                    {{ total_payees|floatformat:0 }} DH
+                </div>
+                <div class="stat-glow-label">
+                    <i class="bi bi-check-circle me-2"></i>Déjà payées
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+            <div class="glass-card text-center" style="border-top-color: var(--accent);">
+                <div class="stat-glow-number" style="color: #fbbf24; background: none; -webkit-text-fill-color: #fbbf24;">
+                    {{ nombre_retards }}
+                </div>
+                <div class="stat-glow-label">
+                    <i class="bi bi-clock-history me-2"></i>Emprunts en retard
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphique + Export PDF -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="glass-card" data-aos="fade-up">
+                <h5 class="fw-bold mb-3" style="color: #a5b4fc;">
+                    <i class="bi bi-pie-chart-fill me-2"></i>Répartition des amendes
+                </h5>
+                <canvas id="amendesChart" style="max-height: 220px; width: 100%;"></canvas>
+                <div class="text-center mt-3">
+                    <small style="color: #64748b;">
+                        <span style="color: #34d399;">● Payées</span> | 
+                        <span style="color: #f87171;">● Impayées</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="glass-card" data-aos="fade-up">
+                <h5 class="fw-bold mb-3" style="color: #a5b4fc;">
+                    <i class="bi bi-download me-2"></i>Export
+                </h5>
+                <p style="color: #64748b;">Téléchargez l'historique complet de vos amendes au format PDF.</p>
+                <a href="{% url 'borrowings:export_amendes_pdf' %}" class="btn btn-glow" style="background: linear-gradient(135deg, #10b981, #34d399);">
+                    <i class="bi bi-file-pdf me-2"></i>Exporter en PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Réduction disponible -->
+    {% if reduction_disponible and total_impayees > 0 %}
+    <div class="alert alert-success mb-4" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px;">
+        <i class="bi bi-star-fill me-2" style="color: #fbbf24;"></i>
+        Vous avez <strong>{{ points_utilisateur }} points</strong> de fidélité !
+        <strong>Réduction de 50%</strong> disponible sur vos amendes impayées.
+    </div>
+    {% endif %}
+
+    <!-- ✅ Bouton "Tout payer" (apparaît SEULEMENT si des amendes sont payables) -->
+    <!-- ✅ Bouton "Tout payer" (apparaît SEULEMENT si des amendes sont payables) -->
+<!-- ✅ Bouton "Tout payer" corrigé -->
+<!-- ✅ Bouton "Tout payer" - ouvre le modal comme le bouton Payer -->
+{% if amendes_payables %}
+<div class="mb-4 text-end">
+    <button id="payerToutBtn" class="btn btn-glow" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); padding: 0.5rem 1.5rem;">
+        <i class="bi bi-cash-stack me-2"></i>Payer toutes les amendes retournées ({{ total_payables|floatformat:0 }} DH)
+    </button>
+</div>
+{% endif %}
+
+    <!-- ============================================ -->
+    <!-- TABLEAU DES AMENDES À RÉGLER -->
+    <!-- ============================================ -->
+    <div class="glass-card mb-4" data-aos="fade-up">
+        <h4 class="fw-bold mb-3" style="color: #f87171;">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Amendes à régler
+        </h4>
+        {% if amendes_impayees %}
+        <div class="table-responsive">
+            <table class="table mb-0" style="color: #cbd5e1;">
+                <thead>
+                    <tr style="border-color: rgba(255,255,255,0.08);">
+                        <th>Livre</th>
+                        <th>Date retour prévue</th>
+                        <th>Jours de retard</th>
+                        <th>Amende</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in amendes_impayees %}
+                    <tr style="border-color: rgba(255,255,255,0.05);">
+                        <td style="color: #e2e8f0; font-weight: 500;">{{ emp.livre.titre|truncatechars:40 }}</td>
+                        <td style="color: #94a3b8;">{{ emp.date_retour_prevue|date:"d/m/Y" }}</td>
+                        <td class="text-danger fw-bold">
+                            {% if emp.statut == "retourne" %}
+                                {{ emp.calculer_retard }} j
+                            {% else %}
+                                <span class="text-warning">Livre non retourné</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-warning fw-bold">{{ emp.amende_totale|floatformat:0 }} DH</td>
+<td>
+    {# ✅ CAS 1 : Livre NON retourné → Bouton "Retourner" #}
+    {% if emp.statut != "retourne" %}
+        <a href="{% url 'borrowings:emprunt_retour' emp.pk %}" 
+           class="btn btn-success-glow btn-sm" 
+           onclick="return confirm('Confirmer le retour du livre ?');"
+           style="padding: 0.3rem 0.8rem;">
+            <i class="bi bi-arrow-return-left me-1"></i>Retourner
+        </a>
+    
+    {# ✅ CAS 2 : Livre retourné ET amende non payée → Bouton "Payer" #}
+    {% elif emp.statut == "retourne" and not emp.est_payee and not emp.demande_paiement_manuel %}
+        <button class="btn btn-glow btn-sm payer-btn" 
+                data-pk="{{ emp.pk }}" 
+                data-montant="{{ emp.amende_totale }}" 
+                style="padding: 0.3rem 0.8rem; background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+            <i class="bi bi-cash-coin me-1"></i>Payer
+        </button>
+    
+    {# ✅ CAS : Demande de paiement en attente #}
+    {% elif emp.demande_paiement_manuel and not emp.est_payee %}
+        <span class="text-warning">
+            <i class="bi bi-hourglass-split me-1"></i>En attente de validation
+        </span>
+    
+    {# ✅ CAS 3 : Amende déjà payée → Message "Payée" #}
+    {% else %}
+        <span class="text-success">
+            <i class="bi bi-check-circle-fill me-1"></i>Payée
+        </span>
+    {% endif %}
+</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-check-circle display-4" style="color: #34d399;"></i>
+            <p class="mt-2" style="color: #64748b;">Aucune amende impayée !</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Tableau historique des amendes payées -->
+    <div class="glass-card" data-aos="fade-up" data-aos-delay="100">
+        <h4 class="fw-bold mb-3" style="color: #34d399;">
+            <i class="bi bi-clock-history me-2"></i>Historique des amendes payées
+        </h4>
+        {% if amendes_payees %}
+        <div class="table-responsive">
+            <table class="table mb-0" style="color: #cbd5e1;">
+                <thead>
+                    <tr style="border-color: rgba(255,255,255,0.08);">
+                        <th>Livre</th>
+                        <th>Date retour prévue</th>
+                        <th>Amende payée</th>
+                        <th>Date de paiement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in amendes_payees %}
+                    <tr style="border-color: rgba(255,255,255,0.05);">
+                        <td style="color: #e2e8f0; font-weight: 500;">{{ emp.livre.titre|truncatechars:40 }}</td>
+                        <td style="color: #94a3b8;">{{ emp.date_retour_prevue|date:"d/m/Y" }}</td>
+                        <td class="text-success">{{ emp.amende_totale|floatformat:0 }} DH</td>
+                        <td style="color: #64748b;">{{ emp.paiement_valide_le|date:"d/m/Y H:i"|default:emp.date_retour_effective|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <p style="color: #64748b;">Aucun historique d'amende payée.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- MODAL DE CONFIRMATION PAIEMENT (2 options) -->
+<div class="modal fade" id="paiementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #1e293b; border: 1px solid rgba(99,102,241,0.3); border-radius: 24px;">
+            <div class="modal-header" style="border-bottom-color: rgba(255,255,255,0.08);">
+                <h5 class="modal-title" style="color: #fbbf24;">
+                    <i class="bi bi-cash-coin me-2"></i>Paiement de l'amende
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-center">Montant à payer : <strong id="modalMontant" style="color: #fbbf24; font-size: 1.5rem;">0 DH</strong></p>
+                
+                {% if reduction_disponible %}
+                <div class="alert alert-success mb-3" style="background: rgba(16,185,129,0.15); border: none; border-radius: 12px;">
+                    <i class="bi bi-star-fill me-2"></i>
+                    <strong>Réduction 50% disponible !</strong> Le montant sera réduit automatiquement.
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <label class="form-label-premium mb-2 text-center d-block">Choisissez votre mode de paiement :</label>
+                    <div class="d-flex gap-3">
+                        <button id="payerManuelBtn" class="btn btn-glow flex-fill" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); padding: 12px;">
+                            <i class="bi bi-cash-stack me-2 fs-4"></i><br>
+                            <small>Espèces (sur place)</small>
+                        </button>
+                        <button id="payerEnLigneBtn" class="btn btn-glow flex-fill" style="background: linear-gradient(135deg, #6366f1, #ec4899); padding: 12px;">
+                            <i class="bi bi-credit-card me-2 fs-4"></i><br>
+                            <small>Carte bancaire</small>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top-color: rgba(255,255,255,0.08);">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CONFETTIS -->
+<canvas id="confettiCanvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999;"></canvas>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js pour le graphique -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+    // Attendre que le DOM soit complètement chargé
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // ==================== VARIABLES GLOBALES ====================
+        var selectedPk = null;
+        var selectedMontant = null;
+        var modal = null;
+        
+        // ==================== MODAL ====================
+        var modalElement = document.getElementById('paiementModal');
+        if (modalElement) {
+            modal = new bootstrap.Modal(modalElement);
+        }
+
+        // ==================== GRAPHIQUE CAMEMBERT ====================
+        var chartCanvas = document.getElementById('amendesChart');
+        if (chartCanvas) {
+            var totalPayees = parseFloat("{{ total_payees|default:'0' }}");
+            var totalImpayees = parseFloat("{{ total_impayees|default:'0' }}");
+            
+            if (totalPayees + totalImpayees > 0) {
+                new Chart(chartCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Payées', 'Impayées'],
+                        datasets: [{
+                            data: [totalPayees, totalImpayees],
+                            backgroundColor: ['#34d399', '#f87171'],
+                            borderColor: '#1e293b',
+                            borderWidth: 2,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        var label = context.label || '';
+                                        var value = context.raw || 0;
+                                        var total = context.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                        var percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                        return label + ': ' + value + ' DH (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        },
+                        cutout: '60%'
+                    }
+                });
+            } else {
+                chartCanvas.style.opacity = '0.5';
+                var ctx = chartCanvas.getContext('2d');
+                ctx.font = '14px "Outfit", sans-serif';
+                ctx.fillStyle = '#64748b';
+                ctx.textAlign = 'center';
+                ctx.fillText('Aucune donnée', chartCanvas.width / 2, chartCanvas.height / 2);
+            }
+        }
+
+        // ==================== PAIEMENT INDIVIDUEL ====================
+        // Quand on clique sur un bouton Payer (individuel)
+        var payerBtns = document.querySelectorAll('.payer-btn');
+        for (var i = 0; i < payerBtns.length; i++) {
+            payerBtns[i].addEventListener('click', function(e) {
+                e.preventDefault();
+                selectedPk = this.dataset.pk;
+                selectedMontant = this.dataset.montant;
+                var modalMontant = document.getElementById('modalMontant');
+                if (modalMontant) {
+                    modalMontant.innerText = selectedMontant + ' DH';
+                }
+                if (modal) {
+                    modal.show();
+                }
+            });
+        }
+
+        // ==================== BOUTON "TOUT PAYER" ====================
+        var payerToutBtn = document.getElementById('payerToutBtn');
+        if (payerToutBtn) {
+            payerToutBtn.addEventListener('click', function() {
+                var totalPayables = parseFloat("{{ total_payables|default:'0' }}");
+                if (totalPayables > 0) {
+                    selectedPk = 'all';
+                    selectedMontant = totalPayables;
+                    var modalMontant = document.getElementById('modalMontant');
+                    if (modalMontant) {
+                        modalMontant.innerText = selectedMontant + ' DH';
+                    }
+                    if (modal) {
+                        modal.show();
+                    }
+                }
+            });
+        }
+
+        // ==================== GESTIONNAIRES DE PAIEMENT ====================
+        
+        // Paiement manuel (espèces) - pour paiement individuel ET groupé
+        var payerManuelBtn = document.getElementById('payerManuelBtn');
+        if (payerManuelBtn) {
+            payerManuelBtn.addEventListener('click', function() {
+                if (selectedPk) {
+                    if (modal) modal.hide();
+                    if (selectedPk === 'all') {
+                        window.location.href = "{% url 'borrowings:payer_toutes_amendes_manuel' %}";
+                    } else {
+                        var url = "{% url 'borrowings:payer_amende_manuel' 0 %}".replace('0', selectedPk);
+                        window.location.href = url;
+                    }
+                }
+            });
+        }
+
+        // Paiement en ligne (carte bancaire) - pour paiement individuel ET groupé
+        var payerEnLigneBtn = document.getElementById('payerEnLigneBtn');
+        if (payerEnLigneBtn) {
+            payerEnLigneBtn.addEventListener('click', function() {
+                if (selectedPk) {
+                    if (modal) modal.hide();
+                    if (selectedPk === 'all') {
+                        window.location.href = "{% url 'borrowings:payer_toutes_amendes_en_ligne' %}";
+                    } else {
+                        var url = "{% url 'borrowings:payer_amende_en_ligne' 0 %}".replace('0', selectedPk);
+                        window.location.href = url;
+                    }
+                }
+            });
+        }
+
+        // ==================== CONFETTIS ====================
+        function lancerConfettis() {
+            var canvas = document.getElementById('confettiCanvas');
+            if (!canvas) return;
+            
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            var ctx = canvas.getContext('2d');
+            var confettis = [];
+            
+            for (var i = 0; i < 150; i++) {
+                confettis.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 10 + 5,
+                    color: 'hsl(' + (Math.random() * 360) + ', 70%, 60%)',
+                    speed: Math.random() * 5 + 3
+                });
+            }
+            
+            var animationId = null;
+            
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                var stillMoving = false;
+                
+                for (var j = 0; j < confettis.length; j++) {
+                    var c = confettis[j];
+                    c.y += c.speed;
+                    if (c.y < canvas.height) stillMoving = true;
+                    ctx.fillStyle = c.color;
+                    ctx.fillRect(c.x, c.y, c.size, c.size);
+                }
+                
+                if (stillMoving) {
+                    animationId = requestAnimationFrame(draw);
+                } else {
+                    if (animationId) cancelAnimationFrame(animationId);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+            
+            draw();
+            
+            setTimeout(function() {
+                if (animationId) cancelAnimationFrame(animationId);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }, 3000);
+        }
+
+        // Vérifier si un paiement vient d'être effectué (paramètre URL)
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('paiement') === 'success') {
+            lancerConfettis();
+        }
+        
+    }); // Fin de DOMContentLoaded
+</script>
+{% endblock %}

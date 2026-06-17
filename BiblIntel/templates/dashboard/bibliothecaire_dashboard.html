@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% block title %}Mon Dashboard - Bibliothécaire{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+        <div>
+            <h1 class="fw-bold" style="background: linear-gradient(135deg, #fff, #fbbf24); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <i class="bi bi-person-badge-fill me-2"></i>Dashboard Bibliothécaire
+            </h1>
+            <p style="color: #64748b">Bienvenue {{ user.first_name }} {{ user.last_name }} !</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'books:livre_create' %}" class="btn btn-glow">
+                <i class="bi bi-plus-circle me-2"></i>Ajouter un livre
+            </a>
+            <a href="{% url 'books:livre_list' %}" class="btn btn-glow" style="background: linear-gradient(135deg, #64748b, #94a3b8)">
+                <i class="bi bi-book me-2"></i>Catalogue
+            </a>
+        </div>
+    </div>
+
+    <!-- Cartes statistiques -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3" data-aos="fade-up" data-aos-delay="0">
+            <div class="glass-card text-center">
+                <i class="bi bi-cash-stack fs-1" style="color: #fbbf24;"></i>
+                <h2 class="mt-2 fw-bold" style="color: #fbbf24;">{{ stats.salaire_total|default:"0"|floatformat:2 }} DH</h2>
+                <p class="mb-0" style="color: #64748b;">Salaire total</p>
+            </div>
+        </div>
+        <div class="col-md-3" data-aos="fade-up" data-aos-delay="100">
+            <div class="glass-card text-center">
+                <i class="bi bi-book fs-1" style="color: #a5b4fc;"></i>
+                <h2 class="mt-2 fw-bold" style="color: #a5b4fc;">{{ stats.total_livres_ajoutes }}</h2>
+                <p class="mb-0" style="color: #64748b;">Livres ajoutés</p>
+            </div>
+        </div>
+        <div class="col-md-3" data-aos="fade-up" data-aos-delay="200">
+            <div class="glass-card text-center">
+                <i class="bi bi-journal-arrow-down fs-1" style="color: #34d399;"></i>
+                <h2 class="mt-2 fw-bold" style="color: #34d399;">{{ stats.total_emprunts_sur_livres }}</h2>
+                <p class="mb-0" style="color: #64748b;">Emprunts totaux</p>
+            </div>
+        </div>
+        <div class="col-md-3" data-aos="fade-up" data-aos-delay="300">
+            <div class="glass-card text-center">
+                <i class="bi bi-star-fill fs-1" style="color: #fbbf24;"></i>
+                <h2 class="mt-2 fw-bold" style="color: #fbbf24;">{{ livres_bonus|length }}</h2>
+                <p class="mb-0" style="color: #64748b;">Livres avec bonus note</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Détail des gains -->
+    <div class="glass-card mb-4" data-aos="fade-up">
+        <h4 class="fw-bold mb-3" style="color: #a5b4fc;">
+            <i class="bi bi-pie-chart-fill me-2"></i>Détail de mes gains
+        </h4>
+        <div class="row text-center">
+            <div class="col-md-4">
+                <div class="p-3" style="background: rgba(99,102,241,0.1); border-radius: 16px;">
+                    <span class="fs-3 fw-bold" style="color: #a5b4fc;">{{ stats.total_gains_base|default:"0"|floatformat:0 }} DH</span>
+                    <p class="mb-0 small" style="color: #64748b;">+10 DH par livre ajouté</p>
+                    <small class="text-muted">({{ stats.total_livres_ajoutes }} livres)</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3" style="background: rgba(245,158,11,0.1); border-radius: 16px;">
+                    <span class="fs-3 fw-bold" style="color: #fbbf24;">{{ stats.total_gains_bonus|default:"0"|floatformat:0 }} DH</span>
+                    <p class="mb-0 small" style="color: #64748b;">+20 DH (avis ≥ 4/5)</p>
+                    <small class="text-muted">({{ livres_bonus|length }} livres bonus)</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3" style="background: rgba(16,185,129,0.1); border-radius: 16px;">
+                    <span class="fs-3 fw-bold" style="color: #34d399;">{{ stats.total_gains_emprunts|default:"0"|floatformat:0 }} DH</span>
+                    <p class="mb-0 small" style="color: #64748b;">+5 DH par emprunt</p>
+                    <small class="text-muted">({{ stats.total_emprunts_sur_livres }} emprunts)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations bancaires -->
+    <div class="glass-card mb-4" data-aos="fade-up">
+        <h4 class="fw-bold mb-3" style="color: #fbbf24;">
+            <i class="bi bi-bank me-2"></i>Informations bancaires
+        </h4>
+        <div class="row">
+            <div class="col-md-8">
+                <p><strong>RIB :</strong> <code>{{ user.rib|default:"Non renseigné" }}</code></p>
+                <small class="text-muted">Les virements de salaire sont effectués chaque fin de mois.</small>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399; padding: 0.5rem 1rem;">
+                    <i class="bi bi-check-circle me-1"></i>Compte actif
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Derniers livres ajoutés -->
+    <div class="glass-card mb-4" data-aos="fade-up">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold mb-0" style="color: #a5b4fc;">
+                <i class="bi bi-clock-history me-2"></i>Derniers livres ajoutés
+            </h4>
+            <a href="{% url 'books:livre_list' %}" class="btn btn-sm btn-glow">Voir tous</a>
+        </div>
+        {% if derniers_livres %}
+        <div class="table-responsive">
+            <table class="table mb-0" style="color: #cbd5e1;">
+                <thead>
+                    <tr style="border-color: rgba(255,255,255,0.08);">
+                        <th>Titre</th>
+                        <th>Auteur</th>
+                        <th>Emprunts</th>
+                        <th>Note moyenne</th>
+                        <th>Gains</th>
+                        <th>Date ajout</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for livre in derniers_livres %}
+                    <tr style="border-color: rgba(255,255,255,0.05);">
+                        <td style="color: #e2e8f0; font-weight: 500;">{{ livre.titre|truncatechars:35 }}</td>
+                        <td style="color: #94a3b8;">{{ livre.auteur }}</td>
+                        <td style="color: #a5b4fc;">{{ livre.nombre_emprunts }}</td>
+                        <td>
+                            {% if livre.note_moyenne > 0 %}
+                                <span class="text-warning">{{ livre.note_moyenne }}/5</span>
+                                {% if livre.note_moyenne >= 4 %}
+                                    <i class="bi bi-star-fill text-warning"></i>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% with total=livre.gain_salaire_base|add:livre.gain_salaire_bonus_note|add:livre.gain_salaire_emprunts %}
+                                <span style="color: #fbbf24; font-weight: 600;">{{ total|floatformat:0 }} DH</span>
+                            {% endwith %}
+                        </td>
+                        <td style="color: #64748b;">{{ livre.date_ajout|date:"d/m/Y" }}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{% url 'books:livre_detail' livre.pk %}" class="btn btn-sm btn-glow" title="Voir">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'books:livre_update' livre.pk %}" class="btn btn-sm btn-glow" style="background: linear-gradient(135deg, #64748b, #94a3b8);" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-inbox display-4" style="color: #64748b;"></i>
+            <p class="mt-2" style="color: #64748b;">Aucun livre ajouté pour le moment.</p>
+            <a href="{% url 'books:livre_create' %}" class="btn btn-glow btn-sm">Ajouter mon premier livre</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Top livres populaires -->
+    {% if livres_populaires %}
+    <div class="glass-card mb-4" data-aos="fade-up">
+        <h4 class="fw-bold mb-3" style="color: #34d399;">
+            <i class="bi bi-trophy-fill me-2"></i>Mes livres les plus empruntés
+        </h4>
+        <div class="table-responsive">
+            <table class="table mb-0" style="color: #cbd5e1;">
+                <thead>
+                    <tr style="border-color: rgba(255,255,255,0.08);">
+                        <th>#</th>
+                        <th>Titre</th>
+                        <th>Auteur</th>
+                        <th>Emprunts</th>
+                        <th>Gain généré</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for livre in livres_populaires %}
+                    <tr style="border-color: rgba(255,255,255,0.05);">
+                        <td style="color: #64748b;">{{ forloop.counter }}</td>
+                        <td style="color: #e2e8f0; font-weight: 500;">{{ livre.titre|truncatechars:40 }}</td>
+                        <td style="color: #94a3b8;">{{ livre.auteur }}</td>
+                        <td style="color: #a5b4fc; font-weight: 600;">{{ livre.nombre_emprunts }}</td>
+                        <td style="color: #fbbf24;">
+                            {% with total=livre.gain_salaire_base|add:livre.gain_salaire_bonus_note|add:livre.gain_salaire_emprunts %}
+                                {{ total|floatformat:0 }} DH
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Livres avec bonus note -->
+    {% if livres_bonus %}
+    <div class="glass-card" data-aos="fade-up">
+        <h4 class="fw-bold mb-3" style="color: #fbbf24;">
+            <i class="bi bi-star-fill me-2"></i>Livres avec bonus note (avis ≥ 4/5)
+        </h4>
+        <div class="table-responsive">
+            <table class="table mb-0" style="color: #cbd5e1;">
+                <thead>
+                    <tr style="border-color: rgba(255,255,255,0.08);">
+                        <th>Titre</th>
+                        <th>Auteur</th>
+                        <th>Note moyenne</th>
+                        <th>Bonus reçu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for livre in livres_bonus %}
+                    <tr style="border-color: rgba(255,255,255,0.05);">
+                        <td style="color: #e2e8f0; font-weight: 500;">{{ livre.titre|truncatechars:45 }}</td>
+                        <td style="color: #94a3b8;">{{ livre.auteur }}</td>
+                        <td>
+                            <span class="text-warning">{{ livre.note_moyenne }}/5</span>
+                            <i class="bi bi-star-fill text-warning"></i>
+                        </td>
+                        <td style="color: #fbbf24; font-weight: 600;">+{{ livre.gain_salaire_bonus_note|default:"0"|floatformat:0 }} DH</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

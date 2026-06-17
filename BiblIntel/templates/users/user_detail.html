@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+{% block title %}{{ user_profile.first_name }} {{ user_profile.last_name }} — BiblIntel{% endblock %} 
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex align-items-center gap-3 mb-5" data-aos="fade-down">
+    <a
+      href="{% url 'users:user_list' %}"
+      class="btn"
+      style="
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        color: #94a3b8;
+        border-radius: 14px;
+        padding: 0.6rem 1.2rem;
+      "
+    >
+      <i class="bi bi-arrow-left me-2"></i>Retour
+    </a>
+    <h2
+      class="fw-bold mb-0"
+      style="
+        background: linear-gradient(135deg, #fff, #a5b4fc);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      "
+    >
+      Profil utilisateur
+    </h2>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="glass-card text-center" data-aos="fade-up">
+        <div class="user-avatar mx-auto mb-3" style="width:80px;height:80px;font-size:2rem;
+                    {% if user_profile.est_blackliste %}background:linear-gradient(135deg,var(--danger),#f87171);{% elif user_profile.is_staff %}background:linear-gradient(135deg,var(--accent),#fbbf24);{% endif %}"
+        >
+          {{ user_profile.first_name|first|upper }}{{ user_profile.last_name|first|upper }}
+        </div>
+        <h4 class="fw-bold mb-1" style="color: #e2e8f0">
+          {{ user_profile.first_name }} {{ user_profile.last_name }}
+        </h4>
+        <p style="color: #64748b; margin: 0">@{{ user_profile.username }}</p>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.25rem">
+          {{ user_profile.email }}
+        </p>
+
+        <div class="mt-3 d-flex justify-content-center gap-2 flex-wrap">
+          <span
+            style="
+              background: rgba(99, 102, 241, 0.15);
+              color: #a5b4fc;
+              padding: 0.4rem 1rem;
+              border-radius: 50px;
+              font-size: 0.85rem;
+            "
+          >
+            {% if user_profile.is_staff %}Admin{% else %}{{ user_profile.get_status_display }}{% endif %}
+          </span>
+          {% if user_profile.est_blackliste %}
+          <span
+            style="
+              background: rgba(239, 68, 68, 0.15);
+              color: #f87171;
+              padding: 0.4rem 1rem;
+              border-radius: 50px;
+              font-size: 0.85rem;
+            "
+          >
+            <i class="bi bi-slash-circle me-1"></i>Blacklisté
+          </span>
+          {% else %}
+          <span
+            style="
+              background: rgba(16, 185, 129, 0.15);
+              color: #34d399;
+              padding: 0.4rem 1rem;
+              border-radius: 50px;
+              font-size: 0.85rem;
+            "
+          >
+            <i class="bi bi-check-circle me-1"></i>Actif
+          </span>
+          {% endif %}
+        </div>
+
+        <div
+          class="mt-4 pt-3"
+          style="border-top: 1px solid var(--glass-border)"
+        >
+          <div class="d-flex justify-content-between py-2">
+            <span style="color: #64748b">Points fidélité</span>
+            <span style="color: #fbbf24; font-weight: 700"
+              ><i class="bi bi-star-fill me-1"></i>{{ user_profile.points_fidelite }}</span>
+          </div>
+          <div class="d-flex justify-content-between py-2">
+            <span style="color: #64748b">Inscription</span>
+            <span style="color: #94a3b8"
+              >{{ user_profile.date_inscription|date:"d/m/Y" }}</span>
+          </div>
+          {% if user_profile.filiere %}
+          <div class="d-flex justify-content-between py-2">
+            <span style="color: #64748b">Filière</span>
+            <span style="color: #a5b4fc">{{ user_profile.filiere }}</span>
+          </div>
+          {% endif %}
+          {% if user_profile.domaine_professionnel %}
+          <div class="d-flex justify-content-between py-2">
+            <span style="color: #64748b">Domaine professionnel</span>
+            <span style="color: #a5b4fc">{{ user_profile.domaine_professionnel }}</span>
+          </div>
+          {% endif %}
+          {% if user_profile.matiere_enseignee %}
+          <div class="d-flex justify-content-between py-2">
+            <span style="color: #64748b">Matière enseignée</span>
+            <span style="color: #a5b4fc">{{ user_profile.matiere_enseignee }}</span>
+          </div>
+          {% endif %}
+          {% if user_profile.telephone %}
+          <div class="d-flex justify-content-between py-2">
+            <span style="color: #64748b">Téléphone</span>
+            <span style="color: #94a3b8">{{ user_profile.telephone }}</span>
+          </div>
+          {% endif %}
+          {% if user_profile.salaire_total > 0 %}
+          <div class="d-flex justify-content-between py-2">
+            <span style="color: #64748b">Salaire total</span>
+            <span style="color: #fbbf24; font-weight: 700">{{ user_profile.salaire_total }} DH</span>
+          </div>
+          {% endif %}
+        </div>
+
+        {# ✅ Bouton suppression de compte (admin uniquement, pas son propre compte) #}
+        {% if request.user.is_staff and user_profile != request.user %}
+        <div class="mt-4">
+          <a href="{% url 'users:user_delete' user_profile.pk %}" class="btn btn-danger-glow w-100" onclick="return confirm('⚠️ Supprimer définitivement le compte de {{ user_profile.first_name }} {{ user_profile.last_name }} ? Cette action est irréversible.')">
+            <i class="bi bi-trash me-2"></i>Supprimer le compte
+          </a>
+        </div>
+        {% endif %}
+
+        {% if user_profile.est_blackliste and user_profile.raison_blacklist %}
+        <div
+          class="mt-3 p-3"
+          style="
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 12px;
+          "
+        >
+          <p style="color: #f87171; font-size: 0.82rem; margin: 0">
+            <i class="bi bi-exclamation-triangle me-2"></i>{{ user_profile.raison_blacklist }}
+          </p>
+          {% if user_profile.date_blacklist %}
+          <p style="color: #94a3b8; font-size: 0.78rem; margin-top: 0.3rem">
+            Depuis le {{ user_profile.date_blacklist|date:"d/m/Y" }}
+          </p>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      {# ✅ SI BIBLIOTHÉCAIRE : Afficher les livres ajoutés #}
+      {% if user_profile.status == "bibliothecaire" %}
+      <div class="glass-card" data-aos="fade-up" data-aos-delay="100">
+        <h5
+          class="fw-bold mb-4"
+          style="
+            background: linear-gradient(135deg, #fff, #a5b4fc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          <i class="bi bi-book me-2"></i>Livres ajoutés par {{ user_profile.first_name }}
+        </h5>
+        <div class="table-responsive">
+          <table class="table mb-0" style="color: #cbd5e1">
+            <thead>
+              <tr style="border-color: rgba(255, 255, 255, 0.08)">
+                <th style="color: #94a3b8">Titre</th>
+                <th style="color: #94a3b8">Auteur</th>
+                <th style="color: #94a3b8">Statut</th>
+                <th style="color: #94a3b8">Date d'ajout</th>
+                <th style="color: #94a3b8">Gains</th>
+                <th style="color: #94a3b8">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for livre in user_profile.livres_ajoutes_bibliothecaire.all %}
+              <tr style="border-color: rgba(255, 255, 255, 0.05)">
+                <td style="color: #e2e8f0; font-weight: 500">{{ livre.titre|truncatechars:40 }}</td>
+                <td style="color: #94a3b8">{{ livre.auteur }}</td>
+                <td>
+                  <span
+                    class="book-status-premium {% if livre.statut == 'disponible' %}status-dispo{% elif livre.statut == 'emprunte' %}status-empr{% else %}status-res{% endif %}"
+                  >
+                    {{ livre.get_statut_display }}
+                  </span>
+                </td>
+                <td style="color: #94a3b8">{{ livre.date_ajout|date:"d/m/Y" }}</td>
+                <td style="color: #fbbf24; font-size: 0.8rem;">
+                  +{{ livre.gain_salaire_base|default:"0" }} DH
+                  {% if livre.gain_salaire_bonus_note > 0 %}<br>+{{ livre.gain_salaire_bonus_note }} DH (bonus){% endif %}
+                  {% if livre.gain_salaire_emprunts > 0 %}<br>+{{ livre.gain_salaire_emprunts }} DH (emprunts){% endif %}
+                </td>
+                <td>
+                  <div class="d-flex gap-2">
+                    <a href="{% url 'books:livre_detail' livre.pk %}" class="btn btn-glow" style="padding: 0.3rem 0.6rem; font-size: 0.7rem;" title="Voir">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{% url 'books:livre_update' livre.pk %}" class="btn btn-glow" style="padding: 0.3rem 0.6rem; font-size: 0.7rem; background: linear-gradient(135deg, #64748b, #94a3b8);" title="Modifier">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4" style="color: #64748b">
+                  Aucun livre ajouté par ce bibliothécaire.
+                 </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {# ✅ SINON (étudiant/enseignant/employeur/personne) : Afficher historique des emprunts #}
+      {% else %}
+      <div class="glass-card" data-aos="fade-up" data-aos-delay="100">
+        <h5
+          class="fw-bold mb-4"
+          style="
+            background: linear-gradient(135deg, #fff, #a5b4fc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+          "
+        >
+          <i class="bi bi-journal-arrow-down me-2"></i>Historique des emprunts
+        </h5>
+        <div class="table-responsive">
+          <table class="table mb-0" style="color: #cbd5e1">
+            <thead>
+              <tr style="border-color: rgba(255, 255, 255, 0.08)">
+                <th style="color: #94a3b8">Livre</th>
+                <th style="color: #94a3b8">Statut</th>
+                <th style="color: #94a3b8">Date emprunt</th>
+                <th style="color: #94a3b8">Retour prévu</th>
+                <th style="color: #94a3b8">Amende</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for emp in emprunts %}
+              <tr style="border-color: rgba(255, 255, 255, 0.05)">
+                <td style="color: #e2e8f0; font-weight: 500">{{ emp.livre.titre|truncatechars:40 }}</td>
+                <td>
+                  <span
+                    class="book-status-premium {% if emp.statut == 'en_cours' %}status-dispo{% elif emp.statut == 'retard' %}status-empr{% elif emp.statut == 'retourne' %}status-arch{% else %}status-res{% endif %}"
+                  >
+                    {{ emp.get_statut_display }}
+                  </span>
+                </td>
+                <td style="color: #94a3b8; font-size: 0.85rem">{{ emp.date_demande|date:"d/m/Y" }}</td>
+                <td style="color: #94a3b8; font-size: 0.85rem">{{ emp.date_retour_prevue|date:"d/m/Y"|default:"—" }}</td>
+                <td>
+                  {% if emp.amende_totale > 0 %}
+                  <span style="color:{% if emp.est_payee %}#34d399{% else %}#f87171{% endif %}; font-weight:600;">
+                    {{ emp.amende_totale }} DH{% if emp.est_payee %} ✓{% endif %}
+                  </span>
+                  {% else %}—{% endif %}
+                 </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4" style="color: #64748b">
+                  Aucun emprunt.
+                 </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

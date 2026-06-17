@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% load bootstrap5 %}
+{% block title %}Modifier l'utilisateur — {{ user_profile.username }}{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="glass-card" data-aos="fade-up">
+        <div class="text-center mb-4">
+          <div
+            class="d-inline-flex align-items-center justify-content-center mb-3"
+            style="
+              width: 70px;
+              height: 70px;
+              background: linear-gradient(
+                135deg,
+                var(--warning),
+                var(--accent)
+              );
+              border-radius: 20px;
+              box-shadow: 0 10px 40px rgba(245, 158, 11, 0.4);
+            "
+          >
+            <i class="bi bi-pencil-square fs-2 text-white"></i>
+          </div>
+          <h2
+            class="fw-bold"
+            style="
+              background: linear-gradient(135deg, #fff, #fbbf24);
+              background-clip: text;
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+            "
+          >
+            Modifier l'utilisateur
+          </h2>
+          <p style="color: #64748b">
+            {{ user_profile.get_full_name|default:user_profile.username }}
+          </p>
+        </div>
+
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          
+          <div class="row g-3">
+            <!-- Informations de base -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Nom d'utilisateur</label>
+              <input type="text" name="username" class="form-control form-control-premium" value="{{ user_profile.username }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-premium">Email</label>
+              <input type="email" name="email" class="form-control form-control-premium" value="{{ user_profile.email }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-premium">Prénom</label>
+              <input type="text" name="first_name" class="form-control form-control-premium" value="{{ user_profile.first_name }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-premium">Nom</label>
+              <input type="text" name="last_name" class="form-control form-control-premium" value="{{ user_profile.last_name }}" required>
+            </div>
+
+            <!-- Statut -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Statut</label>
+              <select name="status" id="statusSelect" class="form-control form-control-premium" onchange="toggleRoleFields()">
+                <option value="etudiant" {% if user_profile.status == "etudiant" %}selected{% endif %}>Étudiant</option>
+                <option value="enseignant" {% if user_profile.status == "enseignant" %}selected{% endif %}>Enseignant</option>
+                <option value="bibliothecaire" {% if user_profile.status == "bibliothecaire" %}selected{% endif %}>Bibliothécaire</option>
+                <option value="employeur" {% if user_profile.status == "employeur" %}selected{% endif %}>Employeur</option>
+                <option value="personne" {% if user_profile.status == "personne" %}selected{% endif %}>Personne normale</option>
+                <option value="admin" {% if user_profile.status == "admin" %}selected{% endif %}>Administrateur</option>
+              </select>
+            </div>
+
+            <!-- Téléphone -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Téléphone</label>
+              <input type="text" name="telephone" class="form-control form-control-premium" value="{{ user_profile.telephone|default:'' }}">
+            </div>
+
+            <!-- Date de naissance -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Date de naissance</label>
+              <input type="date" name="date_naissance" class="form-control form-control-premium" value="{{ user_profile.date_naissance|date:'Y-m-d'|default:'' }}">
+            </div>
+
+            <!-- Photo de profil -->
+            <div class="col-12">
+              <label class="form-label-premium">Photo de profil</label>
+              {% if user_profile.photo_profil %}
+              <div class="mb-2">
+                <img src="{{ user_profile.photo_profil.url }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+              </div>
+              {% endif %}
+              <input type="file" name="photo_profil" class="form-control form-control-premium" accept="image/*">
+            </div>
+
+            <!-- ===== CHAMPS SELON LE RÔLE ===== -->
+
+            <!-- RIB (pour bibliothécaire) -->
+            <div id="rib_field" class="col-md-12 conditional-field" style="display: none;">
+              <label class="form-label-premium">RIB</label>
+              <input type="text" name="rib" class="form-control form-control-premium" value="{{ user_profile.rib|default:'' }}">
+              <small class="text-muted">Relevé d'identité bancaire pour les virements</small>
+            </div>
+
+            <!-- Salaire (bibliothécaire - affichage seuleument) -->
+            <div id="salaire_field" class="col-md-12 conditional-field" style="display: none;">
+              <label class="form-label-premium">Salaire total</label>
+              <input type="text" class="form-control form-control-premium" value="{{ user_profile.salaire_total|default:'0' }} DH" readonly disabled>
+              <small class="text-muted">Le salaire est calculé automatiquement</small>
+            </div>
+
+            <!-- Filière (pour étudiant) -->
+            <div id="filiere_field" class="col-md-12 conditional-field" style="display: none;">
+              <label class="form-label-premium">Filière</label>
+              <input type="text" name="filiere" class="form-control form-control-premium" value="{{ user_profile.filiere|default:'' }}">
+            </div>
+
+            <!-- Domaine professionnel (pour employeur) -->
+            <div id="domaine_field" class="col-md-12 conditional-field" style="display: none;">
+              <label class="form-label-premium">Domaine professionnel</label>
+              <input type="text" name="domaine_professionnel" class="form-control form-control-premium" value="{{ user_profile.domaine_professionnel|default:'' }}">
+            </div>
+
+            <!-- Matière enseignée (pour enseignant) -->
+            <div id="matiere_field" class="col-md-12 conditional-field" style="display: none;">
+              <label class="form-label-premium">Matière enseignée</label>
+              <input type="text" name="matiere_enseignee" class="form-control form-control-premium" value="{{ user_profile.matiere_enseignee|default:'' }}">
+            </div>
+
+            <!-- Points fidélité (pour tous sauf bibliothécaire et admin) -->
+            <div id="points_field" class="col-md-6 conditional-field" style="display: none;">
+              <label class="form-label-premium">Points fidélité</label>
+              <input type="number" name="points_fidelite" class="form-control form-control-premium" value="{{ user_profile.points_fidelite|default:0 }}" min="0">
+            </div>
+
+            <!-- Blacklist -->
+            <div class="col-md-6">
+              <label class="form-label-premium">Blacklisté</label>
+              <select name="est_blackliste" class="form-control form-control-premium">
+                <option value="False" {% if not user_profile.est_blackliste %}selected{% endif %}>Non</option>
+                <option value="True" {% if user_profile.est_blackliste %}selected{% endif %}>Oui</option>
+              </select>
+            </div>
+
+            <!-- Staff (admin uniquement) -->
+            {% if request.user.is_staff %}
+            <div class="col-md-6">
+              <label class="form-label-premium">Staff (admin)</label>
+              <select name="is_staff" class="form-control form-control-premium">
+                <option value="False" {% if not user_profile.is_staff %}selected{% endif %}>Non</option>
+                <option value="True" {% if user_profile.is_staff %}selected{% endif %}>Oui</option>
+              </select>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex gap-3 mt-4">
+            <button type="submit" class="btn btn-glow w-100">
+              <i class="bi bi-save me-2"></i>Enregistrer
+            </button>
+            <a href="{% url 'users:user_list' %}" class="btn btn-glow" style="background: linear-gradient(135deg, #64748b, #94a3b8);">
+              <i class="bi bi-x-lg me-2"></i>Annuler
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleRoleFields() {
+    const status = document.getElementById("statusSelect").value;
+    
+    // Récupérer tous les champs conditionnels
+    const ribField = document.getElementById("rib_field");
+    const salaireField = document.getElementById("salaire_field");
+    const filiereField = document.getElementById("filiere_field");
+    const domaineField = document.getElementById("domaine_field");
+    const matiereField = document.getElementById("matiere_field");
+    const pointsField = document.getElementById("points_field");
+    
+    // Cacher tous d'abord
+    if (ribField) ribField.style.display = "none";
+    if (salaireField) salaireField.style.display = "none";
+    if (filiereField) filiereField.style.display = "none";
+    if (domaineField) domaineField.style.display = "none";
+    if (matiereField) matiereField.style.display = "none";
+    if (pointsField) pointsField.style.display = "block";
+    
+    // Afficher selon le rôle
+    if (status === "bibliothecaire") {
+        if (ribField) ribField.style.display = "block";
+        if (salaireField) salaireField.style.display = "block";
+        if (pointsField) pointsField.style.display = "none";
+    } 
+    else if (status === "employeur") {
+        if (domaineField) domaineField.style.display = "block";
+    } 
+    else if (status === "enseignant") {
+        if (matiereField) matiereField.style.display = "block";
+    }
+    else if (status === "etudiant") {
+        if (filiereField) filiereField.style.display = "block";
+    }
+    else if (status === "admin") {
+        if (pointsField) pointsField.style.display = "none";
+    }
+    // Personne normale : aucun champ supplémentaire
+}
+
+// Appel initial au chargement
+document.addEventListener("DOMContentLoaded", function() {
+    toggleRoleFields();
+});
+</script>
+
+<style>
+.conditional-field {
+    transition: all 0.3s ease;
+}
+.glass-card {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 2rem;
+}
+.form-control-premium {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 0.75rem 1rem;
+    color: white;
+}
+.form-control-premium:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--primary);
+    outline: none;
+}
+.form-label-premium {
+    color: #94a3b8;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+.btn-glow {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 16px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+.btn-glow:hover {
+    transform: translateY(-2px);
+    color: white;
+}
+</style>
+{% endblock %}

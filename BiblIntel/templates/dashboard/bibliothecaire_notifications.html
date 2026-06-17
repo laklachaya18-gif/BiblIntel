@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mes notifications - BiblIntel{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+        <div>
+            <h1 class="fw-bold" style="background: linear-gradient(135deg, #fff, #a5b4fc); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <i class="bi bi-bell-fill me-2"></i>Notifications
+            </h1>
+            <p style="color: #64748b;">Suivez les paiements manuels et l'évolution de votre salaire</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'dashboard:bibliothecaire_dashboard' %}" class="btn btn-glow" style="background: linear-gradient(135deg, #64748b, #94a3b8);">
+                <i class="bi bi-arrow-left me-2"></i>Retour au dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Barre de recherche d'utilisateurs -->
+    <div class="glass-card mb-4" data-aos="fade-up">
+        <h5 class="fw-bold mb-3" style="color: #a5b4fc;">
+            <i class="bi bi-search me-2"></i>Rechercher un utilisateur
+        </h5>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <input type="text" id="searchUserInput" class="form-control form-control-premium" 
+                       placeholder="Rechercher par nom, prénom, email ou nom d'utilisateur...">
+            </div>
+            <div class="col-md-4">
+                <button id="searchUserBtn" class="btn btn-glow w-100">
+                    <i class="bi bi-search me-2"></i>Rechercher
+                </button>
+            </div>
+        </div>
+        <div id="searchResults" class="mt-3" style="display: none;">
+            <div class="table-responsive">
+                <table class="table mb-0" style="color: #cbd5e1;">
+                    <thead>
+                        <tr>
+                            <th>Utilisateur</th>
+                            <th>Email</th>
+                            <th>Statut</th>
+                            <th>Amendes impayées</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="searchResultsBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Colonne gauche : Paiements manuels en attente -->
+        <div class="col-lg-6" data-aos="fade-up">
+            <div class="glass-card h-100">
+                <h5 class="fw-bold mb-3" style="color: #fbbf24;">
+                    <i class="bi bi-cash-stack me-2"></i>Paiements manuels en attente
+                    {% if paiements_attente.count > 0 %}
+                    <span class="badge bg-danger ms-2">{{ paiements_attente.count }}</span>
+                    {% endif %}
+                </h5>
+                
+                {% if paiements_attente %}
+                <div class="table-responsive">
+                    <table class="table mb-0" style="color: #cbd5e1;">
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Livre</th>
+                                <th>Montant</th>
+                                <th>Date demande</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for paiement in paiements_attente %}
+                            <tr style="border-color: rgba(255,255,255,0.05);">
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.7rem;">
+                                            {{ paiement.utilisateur.first_name|first }}{{ paiement.utilisateur.last_name|first }}
+                                        </div>
+                                        <div>
+                                            <strong>{{ paiement.utilisateur.first_name }} {{ paiement.utilisateur.last_name }}</strong>
+                                            <br><small style="color: #64748b;">@{{ paiement.utilisateur.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ paiement.livre.titre|truncatechars:30 }}</td>
+                                <td class="text-warning fw-bold">{{ paiement.amende_totale }} DH</td>
+                                <td style="color: #64748b;">{{ paiement.date_retour_effective|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <a href="{% url 'dashboard:valider_paiement_manuel' paiement.pk %}" 
+                                       class="btn btn-success-glow btn-sm"
+                                       onclick="return confirm('Valider ce paiement de {{ paiement.amende_totale }} DH pour {{ paiement.utilisateur.first_name }} ?')">
+                                        <i class="bi bi-check-circle me-1"></i>Valider
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-check-circle display-4" style="color: #34d399;"></i>
+                    <p class="mt-3" style="color: #64748b;">Aucun paiement manuel en attente</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Colonne droite : Notifications de salaire -->
+        <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
+            <div class="glass-card h-100">
+                <h5 class="fw-bold mb-3" style="color: #34d399;">
+                    <i class="bi bi-cash-coin me-2"></i>Historique des gains
+                </h5>
+                
+                {% if historique_gains %}
+                <div class="table-responsive">
+                    <table class="table mb-0" style="color: #cbd5e1;">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Livre</th>
+                                <th>Type de gain</th>
+                                <th>Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for gain in historique_gains %}
+                            <tr style="border-color: rgba(255,255,255,0.05);">
+                                <td style="color: #64748b;">{{ gain.date|date:"d/m/Y" }}</td>
+                                <td>{{ gain.livre_titre|truncatechars:25 }}</td>
+                                <td>
+                                    {% if gain.type == 'base' %}
+                                    <span class="badge" style="background: rgba(99,102,241,0.2); color: #a5b4fc;">
+                                        <i class="bi bi-plus-circle me-1"></i>Ajout livre
+                                    </span>
+                                    {% elif gain.type == 'bonus' %}
+                                    <span class="badge" style="background: rgba(245,158,11,0.2); color: #fbbf24;">
+                                        <i class="bi bi-star-fill me-1"></i>Bonus note (≥4/5)
+                                    </span>
+                                    {% elif gain.type == 'emprunt' %}
+                                    <span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399;">
+                                        <i class="bi bi-journal-arrow-down me-1"></i>Emprunt
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-success fw-bold">+{{ gain.montant }} DH</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-cash-stack display-4" style="color: #34d399; opacity: 0.3;"></i>
+                    <p class="mt-3" style="color: #64748b;">Aucun gain enregistré pour le moment</p>
+                </div>
+                {% endif %}
+                
+                <div class="mt-3 pt-3" style="border-top: 1px solid var(--glass-border);">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="color: #94a3b8;">Salaire total :</span>
+                        <span class="fw-bold fs-4" style="color: #fbbf24;">{{ salaire_total|default:"0" }} DH</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span style="color: #64748b;">Détail des gains :</span>
+                        <div class="text-end">
+                            <small class="d-block">📚 Ajouts de livres : <span class="text-success">{{ total_gains_base }} DH</span></small>
+                            <small class="d-block">⭐ Bonus notes (≥4/5) : <span class="text-warning">{{ total_gains_bonus }} DH</span></small>
+                            <small class="d-block">📖 Emprunts : <span class="text-info">{{ total_gains_emprunts }} DH</span></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications système -->
+    <div class="glass-card mt-4" data-aos="fade-up">
+        <h5 class="fw-bold mb-3" style="color: #a5b4fc;">
+            <i class="bi bi-envelope-paper me-2"></i>Notifications système
+        </h5>
+        {% if notifications %}
+        <div class="list-group">
+            {% for notif in notifications %}
+            <div class="list-group-item" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px; border-radius: 12px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold" style="color: #a5b4fc;">{{ notif.titre }}</div>
+                        <div style="color: #94a3b8; font-size: 0.85rem;">{{ notif.message }}</div>
+                        <small style="color: #64748b;">{{ notif.date_creation|date:"d/m/Y H:i" }}</small>
+                    </div>
+                    {% if notif.lu == 0 %}
+                    <span class="badge bg-danger">Nouvelle</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-bell-slash display-4" style="color: #64748b; opacity: 0.5;"></i>
+            <p class="mt-2" style="color: #64748b;">Aucune notification</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Recherche d'utilisateurs en AJAX
+    const searchInput = document.getElementById('searchUserInput');
+    const searchBtn = document.getElementById('searchUserBtn');
+    const searchResults = document.getElementById('searchResults');
+    const searchResultsBody = document.getElementById('searchResultsBody');
+
+    function searchUsers() {
+        const query = searchInput.value.trim();
+        if (query.length < 2) {
+            searchResults.style.display = 'none';
+            return;
+        }
+
+        fetch(`/dashboard/api/rechercher-utilisateurs/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.users && data.users.length > 0) {
+                    searchResultsBody.innerHTML = data.users.map(user => `
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.7rem;">
+                                        ${user.first_name.charAt(0)}${user.last_name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <strong>${user.first_name} ${user.last_name}</strong>
+                                        <br><small style="color: #64748b;">@${user.username}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${user.email}</td>
+                            <td>${user.status_display}</td>
+                            <td class="text-warning">${user.total_amendes} DH</td>
+                            <td>
+                                <a href="/borrowings/amendes/?utilisateur=${user.username}" 
+                                   class="btn btn-glow btn-sm">
+                                    <i class="bi bi-cash-coin me-1"></i>Voir amendes
+                                </a>
+                            </td>
+                        </tr>
+                    `).join('');
+                    searchResults.style.display = 'block';
+                } else {
+                    searchResultsBody.innerHTML = '<tr><td colspan="5" class="text-center py-3">Aucun utilisateur trouvé</td></tr>';
+                    searchResults.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                searchResultsBody.innerHTML = '<tr><td colspan="5" class="text-center py-3">Erreur lors de la recherche</td></tr>';
+                searchResults.style.display = 'block';
+            });
+    }
+
+    searchBtn.addEventListener('click', searchUsers);
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchUsers();
+        }
+    });
+</script>
+{% endblock %}

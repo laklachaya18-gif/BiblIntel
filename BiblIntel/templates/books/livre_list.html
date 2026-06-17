@@ -1,0 +1,464 @@
+{% extends 'base.html' %}
+
+{% block title %}Catalogue — BiblIntel{% endblock %}
+
+{% block extra_css %}
+<style>
+.book-cover-placeholder {
+    height: 200px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    font-size: 3rem; color: rgba(255,255,255,0.4);
+}
+.book-cover-img {
+    height: 200px; object-fit: cover; width: 100%;
+}
+.book-premium {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+.book-premium:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 30px 60px rgba(99, 102, 241, 0.3);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+.book-premium.selected {
+    border-color: #f87171 !important;
+    box-shadow: 0 0 0 2px #f87171 !important;
+}
+.book-premium .p-3 {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.book-premium .d-flex.gap-2 {
+    margin-top: auto;
+}
+.status-disponible { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.status-emprunte { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+.status-reserve { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); }
+
+/* Checkbox pour sélection multiple */
+.book-checkbox-wrapper {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 20;
+    display: none;
+}
+.book-checkbox {
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    accent-color: #f87171;
+}
+
+/* Barre d'actions en masse */
+.bulk-actions-bar {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    border: 1px solid #f87171;
+    border-radius: 60px;
+    padding: 12px 24px;
+    display: none;
+    gap: 20px;
+    z-index: 1000;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    backdrop-filter: blur(10px);
+}
+.bulk-actions-bar.show {
+    display: flex;
+}
+.bulk-actions-bar .selected-count {
+    color: white;
+    font-weight: 500;
+    align-self: center;
+}
+
+/* Autocomplete */
+.search-autocomplete-container {
+    position: relative;
+    width: 100%;
+    z-index: 10;
+}
+.autocomplete-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #1e293b;
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    border-radius: 12px;
+    max-height: 250px;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    margin-top: 4px;
+}
+.autocomplete-result-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background 0.15s;
+    font-size: 0.9rem;
+}
+.autocomplete-result-item:hover {
+    background: rgba(99, 102, 241, 0.3);
+    color: white;
+}
+.autocomplete-result-item:last-child {
+    border-bottom: none;
+}
+.glass-card {
+    position: relative;
+    z-index: 5;
+    overflow: visible !important;
+}
+.search-input-group {
+    display: flex;
+    width: 100%;
+}
+.search-input-group .input-group-text {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: none;
+    border-radius: 16px 0 0 16px;
+    color: #64748b;
+    padding: 0.75rem 1rem;
+}
+.search-input-group .form-control {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: none;
+    border-radius: 0 16px 16px 0;
+    color: #e2e8f0;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+}
+.search-input-group .form-control:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--primary);
+    box-shadow: none;
+    outline: none;
+}
+.row.g-4 {
+    position: relative;
+    z-index: 1;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+        <div>
+            <h2 class="fw-bold mb-1" style="background: linear-gradient(135deg, #fff, #a5b4fc); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <i class="bi bi-book me-2"></i>Catalogue des livres
+            </h2>
+            <p style="color:#64748b; margin:0;">{{ livres|length }} livre(s) trouvé(s)</p>
+        </div>
+        <div class="d-flex gap-2">
+            {% if user.is_staff or user.status == "bibliothecaire" %}
+            <button id="btnSelectMode" class="btn btn-glow" style="background: linear-gradient(135deg, #64748b, #94a3b8);">
+                <i class="bi bi-check2-square"></i> Sélection multiple
+            </button>
+            <a href="{% url 'books:livre_create' %}" class="btn btn-glow btn-success-glow">
+                <i class="bi bi-plus-lg me-2"></i>Ajouter
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="glass-card mb-4" style="overflow: visible !important;" data-aos="fade-up">
+        <form method="get" id="searchForm" class="row g-3">
+            <div class="col-md-5">
+                <div class="search-autocomplete-container">
+                    <div class="search-input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="search" id="searchInput"
+                               class="form-control"
+                               placeholder="Rechercher par titre, auteur..."
+                               value="{{ search|default:'' }}"
+                               autocomplete="off">
+                    </div>
+                    <div id="autocompleteResults" class="autocomplete-results" style="display: none;"></div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="select-dark-wrapper">
+                    <select name="categorie" class="form-control form-control-premium" id="categorieSelect">
+                        <option value="">Toutes catégories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.pk }}" {% if request.GET.categorie == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="filiere" class="form-control form-control-premium"
+                       placeholder="Filière..." value="{{ filiere|default:'' }}" id="filiereInput">
+            </div>
+            <div class="col-md-2">
+                <div class="select-dark-wrapper">
+                    <select name="statut" class="form-control form-control-premium" id="statutSelect">
+                        <option value="">Tous statuts</option>
+                        <option value="disponible" {% if statut == 'disponible' %}selected{% endif %}>Disponible</option>
+                        <option value="emprunte" {% if statut == 'emprunte' %}selected{% endif %}>Emprunté</option>
+                        <option value="reserve" {% if statut == 'reserve' %}selected{% endif %}>Réservé</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-1 d-flex gap-2">
+                <button type="submit" class="btn btn-glow flex-fill" style="padding:0.875rem;">
+                    <i class="bi bi-funnel"></i>
+                </button>
+                {% if search or request.GET.categorie or filiere or statut %}
+                <a href="{% url 'books:livre_list' %}" class="btn flex-fill" style="background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); color:#94a3b8; border-radius:16px; padding:0.875rem; text-align:center;">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Formulaire de suppression en masse -->
+    <form id="bulkDeleteForm" method="POST" action="{% url 'books:bulk_delete' %}">
+        {% csrf_token %}
+        <input type="hidden" name="livre_ids" id="selectedIds">
+
+        <!-- Books Grid -->
+        <div class="row g-4" id="booksGrid">
+            {% for livre in livres %}
+            <div class="col-md-6 col-lg-4 col-xl-3 book-card" data-id="{{ livre.id }}" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:1 }}00">
+                <div class="book-premium h-100">
+                    <!-- Case à cocher -->
+                    <div class="book-checkbox-wrapper">
+                        <input type="checkbox" class="book-checkbox" value="{{ livre.id }}">
+                    </div>
+                    
+                    <div style="position:relative; overflow:hidden;">
+                        {% if livre.couverture %}
+                        <img src="{{ livre.couverture.url }}" class="book-cover-img" alt="{{ livre.titre }}">
+                        {% else %}
+                        <div class="book-cover-placeholder"><i class="bi bi-book"></i></div>
+                        {% endif %}
+                        <div style="position:absolute; top:0.75rem; left:0.75rem;">
+                            <span class="book-status-premium status-{{ livre.statut }}">{{ livre.get_statut_display }}</span>
+                        </div>
+                        <div style="position:absolute; top:0.75rem; right:0.75rem; background:rgba(0,0,0,0.6); color:#fbbf24; padding:0.25rem 0.6rem; border-radius:50px; font-size:0.78rem; backdrop-filter:blur(10px);">
+                            <i class="bi bi-star-fill me-1"></i>{{ livre.note_moyenne|default:"0" }}
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <h5 class="fw-bold mb-1 text-truncate" title="{{ livre.titre }}" style="color:#e2e8f0;">{{ livre.titre }}</h5>
+                        <p class="mb-1" style="color:#94a3b8; font-size:0.9rem;"><i class="bi bi-person me-1"></i>{{ livre.auteur }}</p>
+                        {% if livre.filiere_cible %}
+                        <p class="mb-2" style="color:#64748b; font-size:0.8rem;"><i class="bi bi-mortarboard me-1"></i>{{ livre.filiere_cible }}</p>
+                        {% endif %}
+                        <p class="mb-3" style="color:#475569; font-size:0.82rem; height:36px; overflow:hidden;">{{ livre.resume|truncatechars:55 }}</p>
+                        <div class="d-flex gap-2">
+                          <a href="{% url 'books:livre_detail' livre.pk %}" class="btn btn-glow flex-fill" style="padding:0.5rem;">
+                            <i class="bi bi-eye me-1"></i>Détails
+                          </a>
+
+                          {# ✅ ADMIN + BIBLIOTHÉCAIRE : pas de bouton emprunt/réservation #}
+                          {% if user.is_authenticated and not user.is_staff and user.status != "bibliothecaire" %}
+                            {# ✅ UTILISATEUR CONNECTÉ NORMAL : Emprunter ou Réserver #}
+                            {% if livre.statut == 'disponible' %}
+                              <a href="{% url 'borrowings:emprunt_create' livre.pk %}" class="btn btn-success-glow" style="padding:0.5rem 0.75rem;" title="Emprunter">
+                                <i class="bi bi-journal-arrow-down"></i>
+                              </a>
+                            {% else %}
+                              <a href="{% url 'borrowings:reservation_create' livre.pk %}" class="btn btn-glow" style="background:linear-gradient(135deg,var(--accent),#fbbf24); padding:0.5rem 0.75rem;" title="Réserver">
+                                <i class="bi bi-bookmark"></i>
+                              </a>
+                            {% endif %}
+                          {% elif not user.is_authenticated %}
+                            {# ✅ VISITEUR NON CONNECTÉ : Bouton "Se connecter" #}
+                            <a href="{% url 'users:login' %}" class="btn btn-glow" style="background:linear-gradient(135deg, #64748b, #94a3b8); padding:0.5rem 0.75rem;" title="Se connecter pour emprunter">
+                              <i class="bi bi-box-arrow-in-right"></i>
+                            </a>
+                          {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5" data-aos="zoom-in">
+                <div class="glass-card d-inline-block px-5">
+                    <i class="bi bi-search display-1 d-block" style="color:var(--primary); opacity:0.3;"></i>
+                    <h4 class="mt-3" style="color:#64748b;">Aucun livre trouvé</h4>
+                    <p style="color:#475569;">Essayez d'autres critères de recherche</p>
+                    <a href="{% url 'books:livre_list' %}" class="btn btn-glow mt-2">Tout afficher</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </form>
+
+    <!-- Barre d'actions en masse -->
+    <div id="bulkActionsBar" class="bulk-actions-bar">
+        <span class="selected-count" id="selectedCount">0 livre(s) sélectionné(s)</span>
+        <button type="button" class="btn btn-danger-glow" id="confirmBulkDeleteBtn" onclick="confirmBulkDelete()">
+            <i class="bi bi-trash"></i> Supprimer
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="deselectAll()">
+            <i class="bi bi-x-lg"></i> Annuler
+        </button>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ========== AUTOCOMPLETE ==========
+const searchInput = document.getElementById('searchInput');
+const autocompleteResults = document.getElementById('autocompleteResults');
+let debounceTimer;
+
+if (searchInput && autocompleteResults) {
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        clearTimeout(debounceTimer);
+        if (query.length < 2) {
+            autocompleteResults.style.display = 'none';
+            return;
+        }
+        debounceTimer = setTimeout(function() {
+            fetch('/livres/?search=' + encodeURIComponent(query) + '&autocomplete=1')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.results && data.results.length > 0) {
+                        autocompleteResults.innerHTML = data.results.map(item => 
+                            `<div class="autocomplete-result-item" data-value="${escapeHtml(item)}">${escapeHtml(item)}</div>`
+                        ).join('');
+                        autocompleteResults.style.display = 'block';
+                    } else {
+                        autocompleteResults.style.display = 'none';
+                    }
+                })
+                .catch(() => {
+                    autocompleteResults.style.display = 'none';
+                });
+        }, 300);
+    });
+    
+    autocompleteResults.addEventListener('click', function(e) {
+        const item = e.target.closest('.autocomplete-result-item');
+        if (item) {
+            searchInput.value = item.getAttribute('data-value');
+            autocompleteResults.style.display = 'none';
+            document.getElementById('searchForm').submit();
+        }
+    });
+    
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !autocompleteResults.contains(e.target)) {
+            autocompleteResults.style.display = 'none';
+        }
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Auto-submit des filtres
+document.getElementById('categorieSelect')?.addEventListener('change', () => document.getElementById('searchForm').submit());
+document.getElementById('statutSelect')?.addEventListener('change', () => document.getElementById('searchForm').submit());
+
+// ========== SÉLECTION MULTIPLE ==========
+let selectMode = false;
+let selectedBooks = new Set();
+
+const btnSelectMode = document.getElementById('btnSelectMode');
+const checkboxesWrapper = document.querySelectorAll('.book-checkbox-wrapper');
+const bulkActionsBar = document.getElementById('bulkActionsBar');
+const selectedCountSpan = document.getElementById('selectedCount');
+
+if (btnSelectMode) {
+    btnSelectMode.addEventListener('click', function() {
+        selectMode = !selectMode;
+        checkboxesWrapper.forEach(cb => {
+            cb.style.display = selectMode ? 'flex' : 'none';
+        });
+        
+        if (!selectMode) {
+            deselectAll();
+        }
+        
+        this.innerHTML = selectMode ? '<i class="bi bi-x-lg"></i> Annuler sélection' : '<i class="bi bi-check2-square"></i> Sélection multiple';
+        this.style.background = selectMode ? 'linear-gradient(135deg, #f87171, #ef4444)' : 'linear-gradient(135deg, #64748b, #94a3b8)';
+    });
+}
+
+// Gérer la sélection
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('book-checkbox')) {
+        const bookId = parseInt(e.target.value);
+        const card = e.target.closest('.book-card');
+        const bookElement = card?.querySelector('.book-premium');
+        
+        if (e.target.checked) {
+            selectedBooks.add(bookId);
+            bookElement?.classList.add('selected');
+        } else {
+            selectedBooks.delete(bookId);
+            bookElement?.classList.remove('selected');
+        }
+        updateBulkActionsBar();
+    }
+});
+
+function updateBulkActionsBar() {
+    const count = selectedBooks.size;
+    if (count > 0) {
+        bulkActionsBar.classList.add('show');
+        selectedCountSpan.innerHTML = `${count} livre(s) sélectionné(s)`;
+    } else {
+        bulkActionsBar.classList.remove('show');
+    }
+}
+
+function deselectAll() {
+    const checkboxes = document.querySelectorAll('.book-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+        selectedBooks.delete(parseInt(cb.value));
+        const card = cb.closest('.book-card');
+        const bookElement = card?.querySelector('.book-premium');
+        bookElement?.classList.remove('selected');
+    });
+    updateBulkActionsBar();
+}
+
+function confirmBulkDelete() {
+    if (selectedBooks.size === 0) return;
+    
+    if (confirm(`⚠️ SUPPRESSION DÉFINITIVE\n\nVous êtes sur le point de supprimer ${selectedBooks.size} livre(s).\n\nCette action est IRREVERSIBLE !\n\nConfirmez-vous la suppression ?`)) {
+        document.getElementById('selectedIds').value = Array.from(selectedBooks).join(',');
+        document.getElementById('bulkDeleteForm').submit();
+    }
+}
+</script>
+{% endblock %}
