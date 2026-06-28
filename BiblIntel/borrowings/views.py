@@ -229,13 +229,14 @@ def export_amendes_pdf(request):
     response['Content-Disposition'] = f'attachment; filename="mes_amendes_{timezone.now().strftime("%Y%m%d")}.pdf"'
     return response
 
+
 @login_required
 def payer_amende_en_ligne(request, pk):
     """Paiement en ligne d'une amende individuelle"""
     emprunt = get_object_or_404(Emprunt, pk=pk, utilisateur=request.user)
     
     if emprunt.statut != "retourne":
-        messages.error(request, "❌ Vous devez d'abord retourner le livre avant de pouvoir payer l'amende.")
+        messages.error(request, "❌ Vous devez d'abord retourner le livre.")
         return redirect("borrowings:emprunt_list")
     
     if emprunt.est_payee:
@@ -252,13 +253,12 @@ def payer_amende_en_ligne(request, pk):
         cvv = request.POST.get("cvv")
         
         compte, created = CompteBancaire.objects.get_or_create(
-            
             utilisateur=request.user,
             defaults={
                 "solde": 500,
-                "numero_carte": numero,
-                "date_expiration": expiration,
-                "cryptogramme": cvv
+                "numero_carte": numero or "4111111111111111",
+                "date_expiration": expiration or "12/28",
+                "cryptogramme": cvv or "123"
             }
         )
         compte.refresh_from_db()
@@ -281,6 +281,17 @@ def payer_amende_en_ligne(request, pk):
             )
             compte_entreprise.crediter(montant)
             
+            # ✅ AJOUT DE LA TRANSACTION
+            from banking.models import Transaction
+            transaction = Transaction.objects.create(
+                compte=compte,
+                type_transaction="paiement_amende",
+                montant=montant,
+                statut="reussie",
+                description=f"Paiement d'amende pour le livre '{emprunt.livre.titre}'"
+            )
+            print(f"✅ Transaction créée : {transaction.reference}")
+            
             Notification.objects.create(
                 utilisateur=request.user,
                 type_notification="validation",
@@ -293,7 +304,7 @@ def payer_amende_en_ligne(request, pk):
             messages.success(request, f"✅ Amende de {montant} DH payée en ligne !")
             return redirect("borrowings:mes_amendes")
         else:
-            messages.error(request, "Solde insuffisant sur le compte bancaire fictif.")
+            messages.error(request, f"Solde insuffisant. Votre solde est de {compte.solde} DH.")
             return redirect("borrowings:payer_amende_en_ligne", pk=pk)
     
     return render(request, "borrowings/paiement_en_ligne.html", {"emprunt": emprunt})
@@ -404,16 +415,16 @@ def payer_groupes_amendes(request):
         cvv = request.POST.get("cvv")
         
         compte, created = CompteBancaire.objects.get_or_create(
-            
             utilisateur=request.user,
             defaults={
                 "solde": 500,
-                "numero_carte": numero,
-                "date_expiration": expiration,
-                "cryptogramme": cvv
+                "numero_carte": numero or "4111111111111111",
+                "date_expiration": expiration or "12/28",
+                "cryptogramme": cvv or "123"
             }
         )
-        compte.refresh_from_db() 
+        compte.refresh_from_db()
+        
         if compte.debiter(total):
             for emprunt in emprunts:
                 emprunt.est_payee = True
@@ -424,6 +435,17 @@ def payer_groupes_amendes(request):
                 defaults={'solde': 0, 'nom': 'BiblIntel - Compte principal'}
             )
             compte_entreprise.crediter(total)
+            
+            # ✅ AJOUT DE LA TRANSACTION
+            from banking.models import Transaction
+            transaction = Transaction.objects.create(
+                compte=compte,
+                type_transaction="paiement_amende",
+                montant=total,
+                statut="reussie",
+                description=f"Paiement groupé de {emprunts.count()} amendes"
+            )
+            print(f"✅ Transaction groupée créée : {transaction.reference}")
             
             _check_blacklist(request.user)
             
@@ -444,7 +466,6 @@ def payer_groupes_amendes(request):
         'emprunts': emprunts,
         'total': total,
     })
-
 @login_required
 def payer_amende(request, pk):
     """Paiement simple d'une amende (avec ou sans réduction)"""
@@ -468,16 +489,41 @@ def payer_amende(request, pk):
         reduction_appliquee = True
         messages.info(request, f"Réduction 50% appliquée ! Montant : {montant} DH")
 
-    emprunt.amende_totale = montant
-    emprunt.est_payee = True
-    emprunt.save()
+    # ✅ Récupérer le compte bancaire
+    compte = CompteBancaire.objects.get(utilisateur=request.user)
+    
+    if compte.debiter(montant):
+        emprunt.amende_totale = montant
+        emprunt.est_payee = True
+        emprunt.save()
+        
+        # ✅ Créditer le compte entreprise
+        compte_entreprise, created = CompteEntreprise.objects.get_or_create(
+            id=1,
+            defaults={'solde': 0, 'nom': 'BiblIntel - Compte principal'}
+        )
+        compte_entreprise.crediter(montant)
+        
+        # ✅ Créer la transaction
+        from banking.models import Transaction
+        transaction = Transaction.objects.create(
+            compte=compte,
+            type_transaction="paiement_amende",
+            montant=montant,
+            statut="reussie",
+            description=f"Paiement d'amende pour le livre '{emprunt.livre.titre}'"
+        )
+        print(f"✅ Transaction créée : {transaction.reference}")
 
-    _check_blacklist(request.user)
+        _check_blacklist(request.user)
 
-    detail = " (réduction 50% fidélité)" if reduction_appliquee else ""
-    _notif(request.user, "validation", "✅ Amende payée", f'Paiement de {montant} DH{detail} validé.')
-    _log(request.user, "paiement", f'Paiement amende {montant} DH{detail} - "{emprunt.livre.titre}"', request)
-    messages.success(request, f"✅ Amende de {montant} DH payée.")
+        detail = " (réduction 50% fidélité)" if reduction_appliquee else ""
+        _notif(request.user, "validation", "✅ Amende payée", f'Paiement de {montant} DH{detail} validé.')
+        _log(request.user, "paiement", f'Paiement amende {montant} DH{detail} - "{emprunt.livre.titre}"', request)
+        messages.success(request, f"✅ Amende de {montant} DH payée.")
+    else:
+        messages.error(request, f"Solde insuffisant. Votre solde est de {compte.solde} DH.")
+    
     return redirect("borrowings:emprunt_list")
 @login_required
 def payer_toutes_amendes_manuel(request):
@@ -527,7 +573,7 @@ def payer_toutes_amendes_manuel(request):
     return redirect('borrowings:mes_amendes')
 @login_required
 def payer_toutes_amendes_en_ligne(request):
-    """Paiement groupé EN LIGNE (carte bancaire) de toutes les amendes des livres retournés"""
+    """Paiement groupé EN LIGNE de toutes les amendes des livres retournés"""
     
     emprunts = Emprunt.objects.filter(
         utilisateur=request.user,
@@ -542,7 +588,6 @@ def payer_toutes_amendes_en_ligne(request):
     
     total_initial = sum(e.amende_totale for e in emprunts)
     
-    # Appliquer réduction si 100+ points
     if request.user.points_fidelite >= 100 and request.user.status != "bibliothecaire":
         total_a_payer = round(total_initial * 0.5, 2)
         request.user.points_fidelite -= 100
@@ -561,12 +606,13 @@ def payer_toutes_amendes_en_ligne(request):
             utilisateur=request.user,
             defaults={
                 "solde": 500,
-                "numero_carte": numero,
-                "date_expiration": expiration,
-                "cryptogramme": cvv
+                "numero_carte": numero or "4111111111111111",
+                "date_expiration": expiration or "12/28",
+                "cryptogramme": cvv or "123"
             }
         )
-        compte.refresh_from_db()  
+        compte.refresh_from_db()
+        
         if compte.debiter(montant):
             for emprunt in emprunts:
                 emprunt.est_payee = True
@@ -577,6 +623,17 @@ def payer_toutes_amendes_en_ligne(request):
                 defaults={'solde': 0, 'nom': 'BiblIntel - Compte principal'}
             )
             compte_entreprise.crediter(montant)
+            
+            # ✅ AJOUT DE LA TRANSACTION
+            from banking.models import Transaction
+            transaction = Transaction.objects.create(
+                compte=compte,
+                type_transaction="paiement_amende",
+                montant=montant,
+                statut="reussie",
+                description=f"Paiement groupé de {emprunts.count()} amendes"
+            )
+            print(f"✅ Transaction groupée créée : {transaction.reference}")
             
             Notification.objects.create(
                 utilisateur=request.user,
@@ -635,7 +692,6 @@ def amende_list(request):
 
 @login_required
 def bibliothecaire_valider_paiement(request, pk):
-    """Validation d'un paiement par le bibliothécaire (après réception des espèces)"""
     if not (request.user.is_staff or request.user.status == "bibliothecaire"):
         messages.error(request, "Accès réservé aux bibliothécaires.")
         return redirect("users:home")
@@ -656,6 +712,18 @@ def bibliothecaire_valider_paiement(request, pk):
         )
         compte_entreprise.crediter(montant)
         
+        # ✅ AJOUTER LA TRANSACTION
+        compte = CompteBancaire.objects.get(utilisateur=emprunt.utilisateur)
+        from banking.models import Transaction
+        transaction = Transaction.objects.create(
+            compte=compte,
+            type_transaction="paiement_amende",
+            montant=montant,
+            statut="reussie",
+            description=f"Paiement manuel validé par {request.user.first_name} pour '{emprunt.livre.titre}'"
+        )
+        print(f"✅ Transaction créée : {transaction.reference}")
+        
         emprunt.est_payee = True
         emprunt.save()
         
@@ -673,7 +741,6 @@ def bibliothecaire_valider_paiement(request, pk):
         return redirect("borrowings:amende_list")
     
     return render(request, 'borrowings/valider_paiement.html', {'emprunt': emprunt})
-
 
 # ==================== EMPRUNTS ET RÉSERVATIONS ====================
 

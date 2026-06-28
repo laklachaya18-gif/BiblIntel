@@ -17,7 +17,7 @@ from notifications.models import Notification
 from django.db import models
 
 print("=" * 70)
-print("📚 INSERTION DES DONNÉES DE TEST - BiblIntel")
+print("📚 INSERTION DES DONNÉES DE TEST - BiblIntel (CORRIGÉE)")
 print("=" * 70)
 
 # ============================================================
@@ -49,7 +49,7 @@ for nom, desc, parent_nom in categories_data:
     print(f"  {'✅' if created else '📁'} Catégorie: {nom}")
 
 # ============================================================
-# 2. UTILISATEURS (sans admin)
+# 2. UTILISATEURS
 # ============================================================
 users_data = [
     # ÉTUDIANTS (5)
@@ -64,7 +64,7 @@ users_data = [
     ('enseignant3', 'Karim', 'Tazi', 'karim.tazi@example.com', 'enseignant', None, '0689012345'),
     ('enseignant4', 'Leila', 'Berrada', 'leila.berrada@example.com', 'enseignant', None, '0690123456'),
     ('enseignant5', 'Hassan', 'Lamrani', 'hassan.lamrani@example.com', 'enseignant', None, '0612345670'),
-    # BIBLIOTHÉCAIRES (5)
+    # BIBLIOTHÉCAIRES (5) - avec RIB
     ('biblio1', 'Khadija', 'Slimani', 'khadija.slimani@example.com', 'bibliothecaire', None, '0612345680'),
     ('biblio2', 'Reda', 'Mouline', 'reda.mouline@example.com', 'bibliothecaire', None, '0623456790'),
     ('biblio3', 'Samira', 'Fassi', 'samira.fassi@example.com', 'bibliothecaire', None, '0634567801'),
@@ -100,6 +100,7 @@ for username, first, last, email, status, filiere, phone in users_data:
             'is_active': True,
             'is_staff': False,
             'is_superuser': False,
+            'salaire_total': 0,  # ✅ Initialisé à 0
         }
     )
     if created:
@@ -127,69 +128,67 @@ for u in [users['etudiant1'], users['etudiant2'], users['etudiant4'], users['etu
           users['personne3'], users['personne4'], users['personne5'], users['personne2']]:
     u.save()
 
-# Bibliothécaires salaires
-users['biblio1'].salaire_total = 150
-users['biblio1'].rib = 'FR7612345678901234567890123'
-users['biblio2'].salaire_total = 220
-users['biblio2'].rib = 'FR7612345678901234567890124'
-users['biblio3'].salaire_total = 95
-users['biblio3'].rib = 'FR7612345678901234567890125'
-users['biblio4'].salaire_total = 310
-users['biblio4'].rib = 'FR7612345678901234567890126'
-users['biblio5'].salaire_total = 180
-users['biblio5'].rib = 'FR7612345678901234567890127'
-
-for b in [users['biblio1'], users['biblio2'], users['biblio3'], users['biblio4'], users['biblio5']]:
-    b.save()
+# RIB des bibliothécaires
+biblio_ribs = {
+    'biblio1': 'FR7612345678901234567890123',
+    'biblio2': 'FR7612345678901234567890124',
+    'biblio3': 'FR7612345678901234567890125',
+    'biblio4': 'FR7612345678901234567890126',
+    'biblio5': 'FR7612345678901234567890127',
+}
+for username, rib in biblio_ribs.items():
+    users[username].rib = rib
+    users[username].save()
+    print(f"  📋 RIB défini pour {username}")
 
 # ============================================================
-# 3. LIVRES
+# 3. LIVRES (avec association aux bibliothécaires)
 # ============================================================
 livres_data = [
+    # (titre, auteur, resume, filiere, pdf, couv, pages, langue, max_emp, biblio_username)
     ('Artificial Intelligence: A Modern Approach', 'Stuart Russell, Peter Norvig', 
      'Livre de référence sur l\'intelligence artificielle.', '4IIR,IASD',
      'livres/pdfs/Artificial_Intelligence.pdf', 'livres/couvertures/Deep_Learning.png',
-     1152, 'Anglais', 2, 10),
+     1152, 'Anglais', 2, 'biblio1'),
     ('Deep Learning', 'Ian Goodfellow', 
      'Livre complet sur le deep learning.', '4IIR,IASD',
      'livres/pdfs/Deep_Learning.pdf', 'livres/couvertures/Deep_Learning.png',
-     800, 'Anglais', 2, 10),
+     800, 'Anglais', 2, 'biblio1'),
     ('Hands-On Machine Learning', 'Aurélien Géron', 
      'Guide pratique pour le machine learning.', '4IIR',
      'livres/pdfs/Hands-On_Machine_Learning.pdf', None,
-     856, 'Anglais', 1, 10),
+     856, 'Anglais', 1, 'biblio2'),
     ('JavaScript: The Good Parts', 'Douglas Crockford', 
      'Les bonnes parties du langage JavaScript.', '3IIR',
      'livres/pdfs/JavaScript_The_Good_Parts.pdf', 'livres/couvertures/JavaScript_The_God_Parts.png',
-     176, 'Anglais', 3, 10),
+     176, 'Anglais', 3, 'biblio2'),
     ('Les Misérables', 'Victor Hugo', 
      'Chef-d\'œuvre de la littérature française.', 'Tous',
      'livres/pdfs/les_miserables_gvt3ZL2.pdf', 'livres/couvertures/les_miserables.png',
-     1462, 'Français', 3, 10),
+     1462, 'Français', 3, 'biblio3'),
     ('Le Petit Prince', 'Antoine de Saint-Exupéry', 
      'Conte philosophique et poétique.', 'Tous',
      'livres/pdfs/Le_Petit_Prince.pdf', 'livres/couvertures/Le_Petit_Prince.png',
-     96, 'Français', 5, 10),
+     96, 'Français', 5, 'biblio3'),
     ('Ce soir', 'Auteur inconnu', 
      'Un roman mystérieux.', 'Tous',
      'livres/pdfs/Ce_soir_mPEOmbM.pdf', 'livres/couvertures/Ce soir.png',
-     200, 'Français', 2, 10),
+     200, 'Français', 2, 'biblio4'),
     ('Meurtres sur Compostelle', 'Auteur inconnu', 
      'Un thriller palpitant.', 'Tous',
      'livres/pdfs/Meurtres_sur_Compostelle_JxTdJQS.pdf', None,
-     250, 'Français', 2, 10),
-    ('1984', 'George Orwell', 'Dystopie classique.', 'Tous', None, None, 328, 'Français', 3, 0),
-    ('Le Meilleur des mondes', 'Aldous Huxley', 'Une dystopie futuriste.', 'Tous', None, None, 311, 'Français', 2, 0),
-    ('L\'Étranger', 'Albert Camus', 'Classique sur l\'absurde.', 'Tous', None, None, 123, 'Français', 3, 0),
-    ('La Peste', 'Albert Camus', 'Roman allégorique.', 'Tous', None, None, 320, 'Français', 2, 0),
-    ('Voyage au bout de la nuit', 'Louis-Ferdinand Céline', 'Roman noir.', 'Tous', None, None, 505, 'Français', 2, 0),
-    ('Clean Code', 'Robert C. Martin', 'Bonnes pratiques de code.', '4IIR,3IIR', None, None, 464, 'Anglais', 2, 0),
-    ('Introduction to Algorithms', 'Thomas H. Cormen', 'Algorithms reference.', '4IIR', None, None, 1312, 'Anglais', 1, 0),
+     250, 'Français', 2, 'biblio4'),
+    ('1984', 'George Orwell', 'Dystopie classique.', 'Tous', None, None, 328, 'Français', 3, 'biblio5'),
+    ('Le Meilleur des mondes', 'Aldous Huxley', 'Une dystopie futuriste.', 'Tous', None, None, 311, 'Français', 2, 'biblio5'),
+    ('L\'Étranger', 'Albert Camus', 'Classique sur l\'absurde.', 'Tous', None, None, 123, 'Français', 3, 'biblio1'),
+    ('La Peste', 'Albert Camus', 'Roman allégorique.', 'Tous', None, None, 320, 'Français', 2, 'biblio2'),
+    ('Voyage au bout de la nuit', 'Louis-Ferdinand Céline', 'Roman noir.', 'Tous', None, None, 505, 'Français', 2, 'biblio3'),
+    ('Clean Code', 'Robert C. Martin', 'Bonnes pratiques de code.', '4IIR,3IIR', None, None, 464, 'Anglais', 2, 'biblio4'),
+    ('Introduction to Algorithms', 'Thomas H. Cormen', 'Algorithms reference.', '4IIR', None, None, 1312, 'Anglais', 1, 'biblio5'),
 ]
 
 livres = {}
-for i, data in enumerate(livres_data, 1):
-    titre, auteur, resume, filiere, pdf, couv, pages, langue, max_emp, gain_base = data
+for titre, auteur, resume, filiere, pdf, couv, pages, langue, max_emp, biblio_username in livres_data:
     livre, created = Livre.objects.get_or_create(
         titre=titre,
         defaults={
@@ -201,13 +200,16 @@ for i, data in enumerate(livres_data, 1):
             'nombre_pages': pages,
             'langue': langue,
             'max_emprunts_simultanes': max_emp,
-            'gain_salaire_base': gain_base,
+            'gain_salaire_base': 10,  # ✅ +10 DH par livre ajouté
+            'gain_salaire_bonus_note': 0,
+            'gain_salaire_emprunts': 0,
             'statut': 'disponible',
-            'date_ajout': datetime.now() - timedelta(days=i*10),
+            'date_ajout': datetime.now() - timedelta(days=10),
+            'bibliothecaire': users[biblio_username],  # ✅ Association au bibliothécaire
         }
     )
     livres[titre] = livre
-    print(f"  {'✅' if created else '📁'} Livre: {titre[:40]}...")
+    print(f"  {'✅' if created else '📁'} Livre: {titre[:40]}... (ajouté par {biblio_username})")
 
 # Associer catégories
 for titre, cat_noms in [
@@ -282,7 +284,7 @@ for user, livre, debut, retour_prevue, statut, amende, payee, prolonge, nb_prolo
     else:
         date_retour_effective = None
     
-    Emprunt.objects.create(
+    emprunt = Emprunt.objects.create(
         utilisateur=user,
         livre=livre,
         date_demande=debut,
@@ -296,6 +298,22 @@ for user, livre, debut, retour_prevue, statut, amende, payee, prolonge, nb_prolo
         a_prolonge=prolonge,
         nombre_prolongations=nb_prolong,
     )
+    
+    # ✅ Incrémenter le compteur d'emprunts du livre
+    livre.nombre_emprunts += 1
+    livre.save()
+    
+    # ✅ Si le livre a un bibliothécaire, ajouter +5 DH pour l'emprunt
+    if livre.bibliothecaire:
+        livre.gain_salaire_emprunts += 5
+        livre.save()
+        # Mettre à jour le salaire du bibliothécaire
+        livre.bibliothecaire.salaire_total = sum(
+            l.gain_salaire_base + l.gain_salaire_bonus_note + l.gain_salaire_emprunts
+            for l in Livre.objects.filter(bibliothecaire=livre.bibliothecaire)
+        )
+        livre.bibliothecaire.save()
+
 print(f"  ✅ {Emprunt.objects.count()} emprunts créés")
 
 # ============================================================
@@ -308,28 +326,36 @@ Reservation.objects.create(utilisateur=users['enseignant4'], livre=livres['JavaS
 print(f"  ✅ {Reservation.objects.count()} réservations créées")
 
 # ============================================================
-# 8. AVIS
+# 8. AVIS (avec bonus pour les bibliothécaires)
 # ============================================================
-Avis.objects.get_or_create(
-    livre=livres['Artificial Intelligence: A Modern Approach'],
-    utilisateur=users['etudiant1'],
-    defaults={'note': 5, 'commentaire': 'Excellent livre sur l\'IA ! Très complet.'} 
-)
-Avis.objects.get_or_create(
-    livre=livres['Deep Learning'],
-    utilisateur=users['etudiant3'],
-    defaults={'note': 5, 'commentaire': 'Le meilleur livre sur le Deep Learning !'}
-)
-Avis.objects.get_or_create(
-    livre=livres['Les Misérables'],
-    utilisateur=users['personne1'],
-    defaults={'note': 5, 'commentaire': 'Chef-d\'œuvre absolu !'}
-)
-Avis.objects.get_or_create(
-    livre=livres['Le Petit Prince'],
-    utilisateur=users['personne4'],
-    defaults={'note': 5, 'commentaire': 'Magnifique conte philosophique.'}
-)
+avis_data = [
+    (livres['Artificial Intelligence: A Modern Approach'], users['etudiant1'], 5, 'Excellent livre sur l\'IA ! Très complet.'),
+    (livres['Deep Learning'], users['etudiant3'], 5, 'Le meilleur livre sur le Deep Learning !'),
+    (livres['Les Misérables'], users['personne1'], 5, 'Chef-d\'œuvre absolu !'),
+    (livres['Le Petit Prince'], users['personne4'], 5, 'Magnifique conte philosophique.'),
+    # ✅ Avis pour générer des bonus notes (≥ 4)
+    (livres['1984'], users['etudiant2'], 4, 'Très bonne dystopie, je recommande.'),
+    (livres['Clean Code'], users['etudiant1'], 5, 'Indispensable pour tout développeur !'),
+]
+
+for livre, user, note, commentaire in avis_data:
+    avis, created = Avis.objects.get_or_create(
+        livre=livre,
+        utilisateur=user,
+        defaults={'note': note, 'commentaire': commentaire}
+    )
+    if created:
+        # ✅ Si note ≥ 4, ajouter +20 DH au bibliothécaire
+        if note >= 4 and livre.bibliothecaire:
+            livre.gain_salaire_bonus_note += 20
+            livre.save()
+            livre.bibliothecaire.salaire_total = sum(
+                l.gain_salaire_base + l.gain_salaire_bonus_note + l.gain_salaire_emprunts
+                for l in Livre.objects.filter(bibliothecaire=livre.bibliothecaire)
+            )
+            livre.bibliothecaire.save()
+            print(f"  ⭐ Bonus +20 DH pour {livre.bibliothecaire.username} (avis ≥ 4 sur '{livre.titre[:30]}...')")
+
 print(f"  ✅ {Avis.objects.count()} avis créés")
 
 # ============================================================
@@ -364,6 +390,23 @@ for livre in livres.values():
         livre.note_moyenne = round(avg, 2)
         livre.save()
 print("  ✅ Notes moyennes mises à jour")
+
+# ============================================================
+# 11. RÉCAPITULATIF DES SALAIRES DES BIBLIOTHÉCAIRES
+# ============================================================
+print("\n" + "=" * 70)
+print("📊 SALAIRES DES BIBLIOTHÉCAIRES")
+print("=" * 70)
+for username in ['biblio1', 'biblio2', 'biblio3', 'biblio4', 'biblio5']:
+    biblio = users[username]
+    livres_biblio = Livre.objects.filter(bibliothecaire=biblio)
+    base_total = sum(l.gain_salaire_base for l in livres_biblio)
+    bonus_total = sum(l.gain_salaire_bonus_note for l in livres_biblio)
+    emprunts_total = sum(l.gain_salaire_emprunts for l in livres_biblio)
+    total = base_total + bonus_total + emprunts_total
+    print(f"  👤 {username}:")
+    print(f"     📚 Livres: {livres_biblio.count()} | Base: {base_total} DH | Bonus: {bonus_total} DH | Emprunts: {emprunts_total} DH")
+    print(f"     💰 Salaire total: {total} DH\n")
 
 # ============================================================
 # RÉCAPITULATIF FINAL

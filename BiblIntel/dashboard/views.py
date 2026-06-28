@@ -210,13 +210,13 @@ def admin_dashboard(request):
     bibliothecaires = (
     users_normaux.filter(status="bibliothecaire")
     .annotate(
-        nb_livres_ajoutes=Count("livres_ajoutes_par", distinct=True),
-        total_gains_base=Sum("livres_ajoutes_par__gain_salaire_base"),
-        total_gains_bonus=Sum("livres_ajoutes_par__gain_salaire_bonus_note"),
-        total_gains_emprunts=Sum("livres_ajoutes_par__gain_salaire_emprunts")
+        nb_livres_ajoutes=Count("livres_ajoutes_bibliothecaire", distinct=True),
+        total_gains_base=Sum("livres_ajoutes_bibliothecaire__gain_salaire_base"),
+        total_gains_bonus=Sum("livres_ajoutes_bibliothecaire__gain_salaire_bonus_note"),
+        total_gains_emprunts=Sum("livres_ajoutes_bibliothecaire__gain_salaire_emprunts")
     )
     .order_by("-salaire_total")
-    )
+)
     for biblio in bibliothecaires:
         biblio.total_gains = (biblio.total_gains_base or 0) + (biblio.total_gains_bonus or 0) + (biblio.total_gains_emprunts or 0)
     # ── Listes existantes ─────────────────────────────────────────────────
@@ -277,7 +277,7 @@ def admin_bibliothecaire_detail(request, pk):
     
     # Récupérer tous les livres ajoutés par ce bibliothécaire
     livres = Livre.objects.filter(bibliothecaire=bibliothecaire).order_by("-date_ajout")
-    
+
     # Calculer les totaux
     total_gains_base = sum(l.gain_salaire_base for l in livres)
     total_gains_bonus = sum(l.gain_salaire_bonus_note for l in livres)
@@ -338,6 +338,7 @@ def bibliothecaire_dashboard(request):
     
     # Récupérer tous les livres ajoutés par ce bibliothécaire
     livres_ajoutes = Livre.objects.filter(bibliothecaire=user).order_by("-date_ajout")
+
     
     # Statistiques
     stats = {
